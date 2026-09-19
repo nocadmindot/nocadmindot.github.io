@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Treasuries – Admin Contacts (SD‑WAN)</title>
+    
+    <!-- LOCAL CSS - Using existing resources from parent folder -->
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="../css/select2.min.css">
+    <link rel="stylesheet" href="../css/select2-bootstrap-5-theme.min.css">
+    
+    <!-- LOCAL JS - Using existing resources from parent folder -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/bootstrap.bundle.min.js"></script>
+    <script src="../js/jquery.dataTables.min.js"></script>
+    <script src="../js/dataTables.bootstrap5.min.js"></script>
+    <script src="../js/select2.min.js"></script>
+    
+          <link rel="stylesheet" href="../css/all-in-one.css">
+</head>
+<body>
+<div class="page-header">
+                <div class="page-header-left">
+                   <i class="bi bi-person-lines-fill"></i>
+                    <div>
+                        <h1>Treasury Contacts</h1>
+                        <p>All Treasury & Admin Contacts</p>
+                    </div>
+                </div>
+            </div>
+<div class="main-wrapper">
+    <!-- header -->
+
+
+    <!-- main card with tabs -->
+    <div class="card-db">
+        <!-- tab navigation -->
+        <ul class="nav nav-tabs-custom nav-tabs" id="treasuryTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab">
+                    <i class="bi bi-grid-3x3-gap-fill"></i>All Treasuries
+                    <span class="badge-count" id="allCount">0</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="district-tab" data-bs-toggle="tab" data-bs-target="#district" type="button" role="tab">
+                    <i class="bi bi-pin-map-fill"></i>District Wise View
+                    <span class="badge-count" id="districtCount">0</span>
+                </button>
+            </li>
+        </ul>
+
+        <!-- tab panes -->
+        <div class="tab-content">
+            <!-- pane 1: ALL treasuries -->
+            <div class="tab-pane fade show active" id="all" role="tabpanel">
+                <div class="table-responsive">
+                    <table id="adminFullTable" class="table table-hover" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Treasury / Location</th>
+                                <th>Network Admin Name</th>
+                                <th>Network Admin Contact</th>
+                                <th>Treasury Admin Name</th>
+                                <th>Treasury Admin Contact</th>
+                                <th>Office Mail ID</th>
+                                <th>Office Contact</th>
+                                <th>Office Mobile</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="8" class="text-center py-5">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p class="mt-2 text-muted">Loading admin contacts ...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- pane 2: District wise view -->
+            <div class="tab-pane fade" id="district" role="tabpanel">
+                <div class="filter-panel">
+                    <div style="flex: 2; min-width: 300px;">
+                        <label>
+                            <i class="bi bi-building"></i> Select District
+                        </label>
+                        <select id="districtSelect" class="form-select" style="width: 100%;"></select>
+                    </div>
+                    <div>
+                        <button id="viewDistrictBtn" class="btn-view">
+                            <i class="bi bi-search"></i> View Treasuries
+                        </button>
+                    </div>
+                    <div class="ms-auto">
+                        <div class="district-stats">
+                            <span><i class="bi bi-database"></i> <span id="districtRowCount">0</span> records</span>
+                            <span><i class="bi bi-building"></i> <span id="totalDistricts">0</span> districts</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="table-responsive">
+                    <table id="districtTable" class="table table-hover" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Treasury name</th>
+                                <th>Mail Id</th>
+                                <th>Phone (Office)</th>
+                                <th>Mobile</th>
+                                <th>Network Admin Name</th>
+                                <th>Network Admin Contact</th>
+                                <th>Treasury Admin Name</th>
+                                <th>Treasury Admin Contact</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="8" class="text-center py-5">
+                                    <i class="bi bi-arrow-up-circle fs-1 text-muted"></i>
+                                    <p class="mt-2 text-muted">Select a district and click "View Treasuries"</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+  
+</div>
+
+<script>
+(function() {
+    // ----------------------------------------------
+    // GLOBALS & CONFIG
+    // ----------------------------------------------
+    const API_KEY = 'AIzaSyBB1V3vJpNZ9X1GIF-YOwoa6YSt_iXMLo0';
+    
+    // Sheet 1 (All treasuries)
+    const SPREADSHEET_ID_ALL = '1HvCqLHC8IyllKskBXX1MtMfjQMGUyhMP7KuTuJxDhmU';
+    const SHEET_ADMIN = 'Admin Contact Details';
+    const RANGE_ALL = 'A2:H';
+
+    // Sheet 2 (District wise)
+    const SPREADSHEET_ID_DISTRICT = '1JxwLKphMWM9fqV43Tt0jQpQjlQC-6DaSlYQ66Fjq7rA';
+    const SHEET_DATA = 'Data';
+    const RANGE_DISTRICT = 'A:I';
+
+    // Data storage
+    let adminRows = [];
+    let districtRawRows = [];
+    let districtList = [];
+
+    // ----------------------------------------------
+    // 1. LOAD ALL TREASURIES (tab1)
+    // ----------------------------------------------
+    function loadAllAdminContacts() {
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID_ALL}/values/${encodeURIComponent(SHEET_ADMIN)}!${RANGE_ALL}?key=${API_KEY}`;
+        
+        fetch(url)
+            .then(res => res.json())
+            .then(data => {
+                adminRows = data.values || [];
+                renderAllTable(adminRows);
+                document.getElementById('allCount').textContent = adminRows.length;
+            })
+            .catch(err => {
+                console.error('Error loading admin sheet:', err);
+                document.querySelector('#adminFullTable tbody').innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-danger">
+                            <i class="bi bi-exclamation-triangle-fill fs-1"></i>
+                            <p class="mt-2">Failed to load data. Please check connection.</p>
+                        </td>
+                    </tr>`;
+            });
+    }
+
+    function renderAllTable(rows) {
+        const tbody = document.querySelector('#adminFullTable tbody');
+        
+        if (!rows || rows.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center py-5">No records found</td></tr>`;
+            if ($.fn.DataTable.isDataTable('#adminFullTable')) {
+                $('#adminFullTable').DataTable().destroy();
+            }
+            return;
+        }
+
+        let htmlRows = '';
+        rows.forEach(row => {
+            const cols = [];
+            for (let i = 0; i < 8; i++) {
+                cols[i] = (row[i] !== undefined && row[i] !== null) ? row[i].toString().trim() : '';
+            }
+
+            htmlRows += `<tr>
+                <td><strong>${escapeHtml(cols[0] || '—')}</strong></td>
+                <td>${escapeHtml(cols[1] || '—')}</td>
+                <td>${formatContact(cols[2], 'phone')}</td>
+                <td>${escapeHtml(cols[3] || '—')}</td>
+                <td>${formatContact(cols[4], 'phone')}</td>
+                <td>${formatContact(cols[5], 'email')}</td>
+                <td>${formatContact(cols[6], 'phone')}</td>
+                <td>${formatContact(cols[7], 'phone')}</td>
+            </tr>`;
+        });
+        
+        tbody.innerHTML = htmlRows;
+
+        // Initialize DataTable
+        if ($.fn.DataTable.isDataTable('#adminFullTable')) {
+            $('#adminFullTable').DataTable().destroy();
+        }
+        
+        $('#adminFullTable').DataTable({
+            paging: true,
+            pageLength: 25,
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, 'All']],
+            ordering: true,
+            scrollX: true,
+            autoWidth: false,
+            language: {
+                search: '',
+                searchPlaceholder: 'Search treasury, name, email...',
+                lengthMenu: 'Show _MENU_ entries',
+                info: 'Showing _START_ to _END_ of _TOTAL_ entries',
+                infoEmpty: 'Showing 0 to 0 of 0 entries',
+                infoFiltered: '(filtered from _MAX_ total entries)'
+            },
+            columnDefs: [
+                { targets: 0, width: '200px' },
+                { targets: 1, width: '160px' },
+                { targets: 2, width: '150px' },
+                { targets: 3, width: '160px' },
+                { targets: 4, width: '150px' },
+                { targets: 5, width: '200px' },
+                { targets: 6, width: '130px' },
+                { targets: 7, width: '130px' }
+            ]
+        });
+    }
+
+    // ----------------------------------------------
+    // 2. LOAD DISTRICT SHEET
+    // ----------------------------------------------
+    function loadDistrictData() {
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID_DISTRICT}/values/${encodeURIComponent(SHEET_DATA)}!${RANGE_DISTRICT}?key=${API_KEY}`;
+        
+        fetch(url)
+            .then(res => res.json())
+            .then(data => {
+                districtRawRows = data.values || [];
+                buildDistrictDropdown();
+                document.getElementById('districtCount').textContent = districtRawRows.length;
+                document.getElementById('totalDistricts').textContent = districtList.length;
+            })
+            .catch(err => {
+                console.error('Error loading district sheet:', err);
+                $('#districtSelect').html('<option value="">⚠️ Failed to load districts</option>');
+            });
+    }
+
+    function buildDistrictDropdown() {
+        // Extract unique districts from column A
+        const districts = new Set();
+        districtRawRows.forEach(row => {
+            if (row.length > 0 && row[0] && row[0].toString().trim() !== '') {
+                districts.add(row[0].toString().trim());
+            }
+        });
+        
+        districtList = Array.from(districts).sort((a, b) => a.localeCompare(b));
+        
+        const $select = $('#districtSelect');
+        $select.empty().append('<option value="">-- Choose a district --</option>');
+        
+        districtList.forEach(d => {
+            $select.append(`<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`);
+        });
+
+        // Initialize Select2
+        $select.select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            placeholder: 'Type or select district',
+            allowClear: true
+        }).on('select2:open', function() {
+            setTimeout(() => document.querySelector('.select2-search__field')?.focus(), 100);
+        });
+    }
+
+    // ----------------------------------------------
+    // 3. VIEW BUTTON: Filter by district
+    // ----------------------------------------------
+    function renderDistrictTable(selectedDistrict) {
+        const $tbody = $('#districtTable tbody');
+        const $info = $('#districtRowCount');
+
+        // Destroy existing DataTable
+        if ($.fn.DataTable.isDataTable('#districtTable')) {
+            $('#districtTable').DataTable().destroy();
+        }
+        
+        $tbody.empty();
+
+        if (!selectedDistrict || !districtRawRows.length) {
+            $tbody.html('<tr><td colspan="8" class="text-center py-4"><span class="text-muted">No district selected or data missing</span></td></tr>');
+            $info.text('0');
+            return;
+        }
+
+        // Filter rows by district (case-insensitive)
+        const filtered = districtRawRows.filter(row => {
+            return row[0] && row[0].toString().trim().toLowerCase() === selectedDistrict.toLowerCase();
+        });
+
+        $info.text(filtered.length);
+
+        if (filtered.length === 0) {
+            $tbody.html(`
+                <tr>
+                    <td colspan="8" class="text-center py-5">
+                        <i class="bi bi-building-slash fs-1 text-muted"></i>
+                        <p class="mt-2">No treasuries found for district "${escapeHtml(selectedDistrict)}"</p>
+                    </td>
+                </tr>
+            `);
+            return;
+        }
+
+        // Build rows
+        let html = '';
+        filtered.forEach(row => {
+            const cols = [];
+            for (let i = 0; i < 9; i++) {
+                cols[i] = (row[i] !== undefined && row[i] !== null) ? row[i].toString().trim() : '';
+            }
+
+            html += `<tr>
+                <td><strong>${escapeHtml(cols[1] || '—')}</strong></td>
+                <td>${formatContact(cols[2], 'email')}</td>
+                <td>${formatContact(cols[3], 'phone')}</td>
+                <td>${formatContact(cols[4], 'phone')}</td>
+                <td>${escapeHtml(cols[5] || '—')}</td>
+                <td>${formatContact(cols[6], 'phone')}</td>
+                <td>${escapeHtml(cols[7] || '—')}</td>
+                <td>${formatContact(cols[8], 'phone')}</td>
+            </tr>`;
+        });
+
+        $tbody.html(html);
+
+        // Initialize DataTable
+        $('#districtTable').DataTable({
+            paging: true,
+            pageLength: 25,
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, 'All']],
+            ordering: true,
+            scrollX: true,
+            autoWidth: false,
+            language: {
+                search: '',
+                searchPlaceholder: 'Search in results...',
+                lengthMenu: 'Show _MENU_ entries',
+                emptyTable: 'No data available for selected district'
+            },
+            destroy: true
+        });
+    }
+
+    // ----------------------------------------------
+    // UTILITY FUNCTIONS
+    // ----------------------------------------------
+    function formatContact(val, type) {
+        if (!val) return '<span class="empty-cell">—</span>';
+        const escaped = escapeHtml(val);
+        
+        if (type === 'email' && val.includes('@')) {
+            return `<a href="mailto:${escapeHtml(val)}" class="contact-link">${escaped}</a>`;
+        } else if (type === 'phone') {
+            const digits = val.replace(/[^0-9+]/g, '');
+            if (digits) {
+                return `<a href="tel:${escapeHtml(digits)}" class="contact-link">${escaped}</a>`;
+            }
+        }
+        return escaped;
+    }
+
+    function escapeHtml(text) {
+        if (text === undefined || text === null) return '—';
+        if (typeof text !== 'string') text = String(text);
+        const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        };
+        return text.replace(/[&<>"']/g, m => map[m]);
+    }
+
+    // ----------------------------------------------
+    // INITIALIZATION
+    // ----------------------------------------------
+    $(document).ready(function() {
+        // Load data
+        loadAllAdminContacts();
+        loadDistrictData();
+
+        // View button click
+        $('#viewDistrictBtn').on('click', function() {
+            const selected = $('#districtSelect').val();
+            if (!selected) {
+                Swal.fire?.({
+                    icon: 'warning',
+                    title: 'No District Selected',
+                    text: 'Please select a district first',
+                    timer: 2000
+                }) || alert('Please select a district');
+                return;
+            }
+            renderDistrictTable(selected);
+        });
+
+        // Tab change animation
+        $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function(e) {
+            // Adjust DataTables columns if needed
+            if ($(e.target).attr('id') === 'district-tab' && $('#districtSelect').val()) {
+                setTimeout(() => {
+                    if ($.fn.DataTable.isDataTable('#districtTable')) {
+                        $('#districtTable').DataTable().columns.adjust();
+                    }
+                }, 100);
+            }
+        });
+    });
+})();
+</script>
+</body>
+</html>

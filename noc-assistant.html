@@ -1,0 +1,2489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0"
+>
+
+<title>Treasury NOC Assistant</title>
+
+<style>
+
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+  --text: #172033;
+  --muted: #667085;
+  --border: rgba(100,116,139,.22);
+  --card: rgba(255,255,255,.72);
+  --input: rgba(255,255,255,.78);
+  --shadow: 0 20px 50px rgba(15,23,42,.12);
+}
+
+@media (prefers-color-scheme: dark) {
+
+  :root {
+    --primary: #60a5fa;
+    --primary-dark: #3b82f6;
+    --text: #f1f5f9;
+    --muted: #a8b3c5;
+    --border: rgba(255,255,255,.12);
+    --card: rgba(15,23,42,.70);
+    --input: rgba(15,23,42,.72);
+    --shadow: 0 20px 50px rgba(0,0,0,.35);
+  }
+}
+
+body {
+
+  margin: 0;
+
+  min-height: 100vh;
+
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
+  color: var(--text);
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255,255,255,.92) 0%,
+      rgba(255,255,255,.65) 35%,
+      rgba(255,255,255,.12) 100%
+    );
+
+  display: flex;
+
+  justify-content: center;
+
+  align-items: center;
+
+  padding: 16px;
+}
+
+@media (prefers-color-scheme: dark) {
+
+  body {
+
+    background:
+      linear-gradient(
+        180deg,
+        rgba(15,23,42,.95) 0%,
+        rgba(15,23,42,.70) 45%,
+        rgba(15,23,42,.18) 100%
+      );
+  }
+}
+
+
+.app {
+
+  width: 100%;
+
+  max-width: 720px;
+
+  height: min(850px, 94vh);
+
+  display: flex;
+
+  flex-direction: column;
+
+  background: var(--card);
+
+  backdrop-filter: blur(18px);
+
+  -webkit-backdrop-filter: blur(18px);
+
+  border: 1px solid var(--border);
+
+  border-radius: 28px;
+
+  box-shadow: var(--shadow);
+
+  overflow: hidden;
+}
+
+
+/* =====================================================
+   HEADER
+===================================================== */
+
+.header {
+
+  padding: 18px 20px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  border-bottom: 1px solid var(--border);
+}
+
+.brand {
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 12px;
+}
+
+.bot-icon {
+
+  width: 44px;
+
+  height: 44px;
+
+  border-radius: 14px;
+
+  display: grid;
+
+  place-items: center;
+
+ /* background: var(--primary);*/
+
+  color: white;
+
+  font-size: 32px;
+
+  font-weight: 700;
+}
+
+.bot-title {
+
+  font-size: 17px;
+
+  font-weight: 700;
+}
+
+.bot-status {
+
+  margin-top: 2px;
+
+  font-size: 12px;
+
+  color: var(--muted);
+}
+
+.header-actions button {
+
+  border: 0;
+
+  background: transparent;
+
+  color: var(--primary);
+
+  cursor: pointer;
+
+  font-size: 13px;
+
+  font-weight: 600;
+
+  padding: 8px;
+}
+
+
+/* =====================================================
+   CHAT
+===================================================== */
+
+.chat {
+
+  flex: 1;
+
+  overflow-y: auto;
+
+  padding: 20px;
+
+  scroll-behavior: smooth;
+}
+
+.message {
+
+  display: flex;
+
+  flex-direction: column;
+
+  margin-bottom: 14px;
+}
+
+.message.user {
+
+  align-items: flex-end;
+}
+
+.message.bot {
+
+  align-items: flex-start;
+}
+
+.bubble {
+
+  max-width: 84%;
+
+  padding: 12px 15px;
+
+  border-radius: 18px;
+
+  line-height: 1.55;
+
+  font-size: 14px;
+
+  word-wrap: break-word;
+
+  overflow-wrap: anywhere;
+
+  position: relative;
+}
+
+.message.bot .bubble {
+
+  background:
+    rgba(148,163,184,.13);
+
+  border:
+    1px solid var(--border);
+
+  border-bottom-left-radius: 5px;
+}
+
+.message.user .bubble {
+
+  background: var(--primary);
+
+  color: white;
+
+  border-bottom-right-radius: 5px;
+}
+
+.bubble strong {
+
+  font-weight: 700;
+}
+
+.bubble a {
+
+  color: var(--primary);
+
+  text-decoration: underline;
+}
+
+.message.user .bubble a {
+
+  color: white;
+}
+
+/* Bubble content wrapper */
+.bubble-content {
+  margin-bottom: 6px;
+}
+
+/* Bubble footer - contains source and timestamp */
+.bubble-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  color: var(--muted);
+  opacity: 0.7;
+  border-top: 1px solid rgba(128, 128, 128, 0.15);
+  padding-top: 4px;
+  margin-top: 2px;
+}
+
+.message.user .bubble-footer {
+  color: rgba(255, 255, 255, 0.7);
+  border-top-color: rgba(255, 255, 255, 0.15);
+}
+
+.bubble-footer .source {
+  font-style: italic;
+}
+
+.bubble-footer .timestamp {
+  white-space: nowrap;
+}
+
+/* Suggestion styling */
+.suggestion-item {
+  display: block;
+  padding: 8px 12px;
+  margin: 6px 0;
+  border-radius: 8px;
+  background: rgba(37, 99, 235, 0.08);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.2s;
+  font-size: 13px;
+}
+
+.suggestion-item:hover {
+  background: rgba(37, 99, 235, 0.16);
+}
+
+.suggestion-item.none {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.suggestion-item.none:hover {
+  background: rgba(239, 68, 68, 0.16);
+}
+
+.suggestion-prompt {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 10px 0 6px 0;
+  color: var(--text);
+}
+
+/* =====================================================
+   TYPING
+===================================================== */
+
+.typing {
+
+  display: inline-flex;
+
+  gap: 4px;
+
+  align-items: center;
+}
+
+.typing span {
+
+  width: 6px;
+
+  height: 6px;
+
+  border-radius: 50%;
+
+  background: currentColor;
+
+  animation:
+    typing 1.2s infinite ease-in-out;
+}
+
+.typing span:nth-child(2) {
+
+  animation-delay: .15s;
+}
+
+.typing span:nth-child(3) {
+
+  animation-delay: .30s;
+}
+
+@keyframes typing {
+
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: .45;
+  }
+
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+
+/* =====================================================
+   INPUT
+===================================================== */
+
+.composer {
+
+  padding: 12px;
+
+  border-top: 1px solid var(--border);
+
+  display: flex;
+
+  gap: 8px;
+
+  background: rgba(148, 163, 184, .13);
+
+}
+
+.question-input {
+
+  flex: 1;
+
+  min-width: 0;
+
+  border:
+    1px solid var(--border);
+
+  background: var(--input);
+
+  color: var(--text);
+
+  border-radius: 16px;
+
+  padding: 12px 14px;
+
+  outline: none;
+
+  resize: none;
+
+  font-family: inherit;
+
+  font-size: 14px;
+
+  min-height: 44px;
+
+  max-height: 120px;
+}
+
+.question-input:focus {
+
+  border-color: var(--primary);
+}
+
+.send-btn {
+
+  width: 46px;
+
+  height: 46px;
+
+  border: 0;
+
+  border-radius: 15px;
+
+  background: var(--primary);
+
+  color: white;
+
+  cursor: pointer;
+
+  font-size: 18px;
+
+  flex-shrink: 0;
+}
+
+.send-btn:hover {
+
+  background: var(--primary-dark);
+}
+
+.send-btn:disabled {
+
+  opacity: .5;
+
+  cursor: not-allowed;
+}
+
+
+/* =====================================================
+   MODAL
+===================================================== */
+
+.modal-backdrop {
+
+  position: fixed;
+
+  inset: 0;
+
+  background:
+    rgba(15,23,42,.48);
+
+  backdrop-filter: blur(7px);
+
+  display: none;
+
+  align-items: center;
+
+  justify-content: center;
+
+  padding: 18px;
+
+  z-index: 1000;
+}
+
+.modal-backdrop.show {
+
+  display: flex;
+}
+
+.modal {
+
+  width: 100%;
+
+  max-width: 430px;
+
+  background: var(--card);
+
+  border:
+    1px solid var(--border);
+
+  border-radius: 24px;
+
+  padding: 24px;
+
+  box-shadow: var(--shadow);
+
+  backdrop-filter: blur(20px);
+}
+
+.modal h2 {
+
+  margin:
+    0 0 7px;
+
+  font-size: 21px;
+}
+
+.modal p {
+
+  margin:
+    0 0 20px;
+
+  color: var(--muted);
+
+  font-size: 13px;
+
+  line-height: 1.5;
+}
+
+.field {
+
+  margin-bottom: 14px;
+}
+
+.field label {
+
+  display: block;
+
+  margin-bottom: 6px;
+
+  font-size: 13px;
+
+  font-weight: 600;
+}
+
+.field input {
+
+  width: 100%;
+
+  border:
+    1px solid var(--border);
+
+  background: var(--input);
+
+  color: var(--text);
+
+  padding: 12px 13px;
+
+  border-radius: 13px;
+
+  outline: none;
+
+  font-family: inherit;
+
+  font-size: 14px;
+}
+
+.field input:focus {
+
+  border-color: var(--primary);
+}
+
+.br-help {
+
+  margin-top: 5px;
+
+  color: var(--muted);
+
+  font-size: 11px;
+}
+
+.modal-error {
+
+  display: none;
+
+  margin-bottom: 12px;
+
+  padding: 10px 12px;
+
+  border-radius: 10px;
+
+  background:
+    rgba(239,68,68,.10);
+
+  color: #dc2626;
+
+  font-size: 12px;
+}
+
+.modal-error.show {
+
+  display: block;
+}
+
+.primary-btn {
+
+  width: 100%;
+
+  border: 0;
+
+  background: var(--primary);
+
+  color: white;
+
+  border-radius: 13px;
+
+  padding: 13px;
+
+  font-family: inherit;
+
+  font-size: 14px;
+
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.secondary-btn {
+
+  width: 100%;
+
+  margin-top: 8px;
+
+  border:
+    1px solid var(--border);
+
+  background: transparent;
+
+  color: var(--text);
+
+  border-radius: 13px;
+
+  padding: 11px;
+
+  font-family: inherit;
+
+  font-size: 13px;
+
+  cursor: pointer;
+}
+
+
+/* =====================================================
+   BRANCH INFO
+===================================================== */
+
+.branch-info {
+
+  margin-top: 8px;
+
+  padding: 9px 12px;
+
+  border-radius: 12px;
+
+  background:
+    rgba(37,99,235,.08);
+
+  font-size: 11px;
+
+  color: var(--muted);
+
+  display: none;
+}
+
+.branch-info.show {
+
+  display: block;
+}
+
+
+/* =====================================================
+   EMPTY / NO ANSWER
+===================================================== */
+
+.query-id {
+
+  margin-top: 8px;
+
+  font-size: 11px;
+
+  opacity: .75;
+}
+
+.query-id strong {
+
+  font-weight: 700;
+}
+
+
+/* =====================================================
+   MOBILE
+===================================================== */
+
+@media (max-width: 600px) {
+
+  body {
+    padding: 0;
+  }
+
+  .app {
+
+    height: 100vh;
+
+    max-height: none;
+
+    border-radius: 0;
+  }
+
+  .chat {
+
+    padding: 15px;
+  }
+
+  .bubble {
+
+    max-width: 90%;
+  }
+}
+
+</style>
+
+</head>
+
+<body>
+
+
+<div class="app">
+
+  <header class="header">
+
+    <div class="brand">
+
+      <div class="bot-icon">
+       🤖
+      </div>
+
+      <div>
+
+        <div
+          class="bot-title"
+          id="botTitle"
+        >
+          Treasury NOC Assistant
+        </div>
+
+        <div
+          class="bot-status"
+          id="botStatus"
+        >
+          Online
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div class="header-actions">
+
+      <button
+        type="button"
+        id="changeUserBtn"
+      >
+        Change
+      </button>
+
+    </div>
+
+  </header>
+
+
+  <main
+    class="chat"
+    id="chat"
+  ></main>
+
+
+  <form
+    class="composer"
+    id="chatForm"
+  >
+
+    <textarea
+      id="questionInput"
+      class="question-input"
+      placeholder="Type your question..."
+      rows="1"
+      autocomplete="off"
+    ></textarea>
+
+    <button
+      class="send-btn"
+      id="sendBtn"
+      type="submit"
+      title="Send"
+    >
+      ➤
+    </button>
+
+  </form>
+
+</div>
+
+
+<!-- ===================================================
+     USER SETUP MODAL
+=================================================== -->
+
+<div
+  class="modal-backdrop"
+  id="userModal"
+>
+
+  <div class="modal">
+
+    <h2>
+      Welcome
+    </h2>
+
+    <p>
+      Please enter your name and BR Code to start
+      using the Treasury NOC Assistant.
+    </p>
+
+
+    <div
+      class="field"
+    >
+
+      <label for="nameInput">
+        Name
+      </label>
+
+      <input
+        id="nameInput"
+        type="text"
+        placeholder="Enter your name"
+        autocomplete="name"
+      >
+
+    </div>
+
+
+    <div
+      class="field"
+    >
+
+      <label for="brInput">
+        BR Code
+      </label>
+
+      <input
+        id="brInput"
+        type="text"
+        placeholder="Example: BR0101 or 101"
+        autocomplete="off"
+      >
+
+      <div class="br-help">
+        BR0101, BR101, br101, BR 101, b r 101
+        and 101 are accepted.
+      </div>
+
+      <div
+        class="branch-info"
+        id="branchInfo"
+      ></div>
+
+    </div>
+
+
+    <div
+      class="modal-error"
+      id="modalError"
+    ></div>
+
+
+    <button
+      class="primary-btn"
+      id="saveUserBtn"
+      type="button"
+    >
+      Continue
+    </button>
+
+  </div>
+
+</div>
+
+
+<script>
+
+/* =====================================================
+   CONFIGURATION
+===================================================== */
+
+const API_URL =
+  'https://script.google.com/macros/s/AKfycbz64ij12ElvKsTKg6aAUDkY7shC5Q487wBbxWffdknBRofzYNNajZYboT8ci21V7t7x/exec';
+
+const STORAGE_KEYS = {
+
+  NAME:
+    'treasury_chat_user_name',
+
+  BR_CODE:
+    'treasury_chat_br_code',
+
+  BRANCH:
+    'treasury_chat_branch'
+};
+
+
+/* =====================================================
+   DOM
+===================================================== */
+
+const chat =
+  document.getElementById(
+    'chat'
+  );
+
+const questionInput =
+  document.getElementById(
+    'questionInput'
+  );
+
+const chatForm =
+  document.getElementById(
+    'chatForm'
+  );
+
+const sendBtn =
+  document.getElementById(
+    'sendBtn'
+  );
+
+const userModal =
+  document.getElementById(
+    'userModal'
+  );
+
+const nameInput =
+  document.getElementById(
+    'nameInput'
+  );
+
+const brInput =
+  document.getElementById(
+    'brInput'
+  );
+
+const saveUserBtn =
+  document.getElementById(
+    'saveUserBtn'
+  );
+
+const modalError =
+  document.getElementById(
+    'modalError'
+  );
+
+const branchInfo =
+  document.getElementById(
+    'branchInfo'
+  );
+
+const changeUserBtn =
+  document.getElementById(
+    'changeUserBtn'
+  );
+
+const botTitle =
+  document.getElementById(
+    'botTitle'
+  );
+
+
+/* =====================================================
+   STATE
+===================================================== */
+
+let userName =
+  localStorage.getItem(
+    STORAGE_KEYS.NAME
+  ) || '';
+
+let brCode =
+  localStorage.getItem(
+    STORAGE_KEYS.BR_CODE
+  ) || '';
+
+let branch =
+  null;
+
+let waiting =
+  false;
+
+// Store the current pending suggestions
+let currentSuggestions = [];
+let isAwaitingSuggestionResponse = false;
+let pendingQuestion = '';
+
+
+/* =====================================================
+   START
+===================================================== */
+
+document.addEventListener(
+  'DOMContentLoaded',
+  function () {
+
+    loadConfig();
+
+    if (
+      userName &&
+      brCode
+    ) {
+
+      loadStoredBranch();
+
+    } else {
+
+      showUserModal();
+    }
+
+    questionInput.focus();
+  }
+);
+
+
+/* =====================================================
+   LOAD CONFIG
+===================================================== */
+
+function loadConfig() {
+
+  jsonp(
+    'config',
+    {},
+    function (response) {
+
+      if (
+        response &&
+        response.success
+      ) {
+
+        if (
+          response.botName
+        ) {
+
+          botTitle.textContent =
+            response.botName;
+        }
+      }
+    }
+  );
+}
+
+
+/* =====================================================
+   LOAD STORED BRANCH
+===================================================== */
+
+function loadStoredBranch() {
+
+  const storedBranch =
+    localStorage.getItem(
+      STORAGE_KEYS.BRANCH
+    );
+
+  if (storedBranch) {
+
+    try {
+
+      branch =
+        JSON.parse(
+          storedBranch
+        );
+
+    } catch (error) {
+
+      branch =
+        null;
+    }
+  }
+
+
+  /*
+   * Validate again with server.
+   */
+
+  validateBranch(
+    brCode,
+    function (response) {
+
+      if (
+        response &&
+        response.success &&
+        response.valid
+      ) {
+
+        branch =
+          response.branch;
+
+        localStorage.setItem(
+          STORAGE_KEYS.BRANCH,
+          JSON.stringify(
+            branch
+          )
+        );
+
+        showWelcome();
+
+      } else {
+
+        localStorage.removeItem(
+          STORAGE_KEYS.BRANCH
+        );
+
+        showUserModal();
+      }
+    }
+  );
+}
+
+
+/* =====================================================
+   USER MODAL
+===================================================== */
+
+function showUserModal() {
+
+  modalError.classList.remove(
+    'show'
+  );
+
+  modalError.textContent =
+    '';
+
+  nameInput.value =
+    userName || '';
+
+  brInput.value =
+    brCode || '';
+
+  userModal.classList.add(
+    'show'
+  );
+
+  setTimeout(
+    function () {
+
+      if (!nameInput.value) {
+
+        nameInput.focus();
+
+      } else {
+
+        brInput.focus();
+      }
+
+    },
+    100
+  );
+}
+
+
+/* =====================================================
+   HIDE MODAL
+===================================================== */
+
+function hideUserModal() {
+
+  userModal.classList.remove(
+    'show'
+  );
+}
+
+
+/* =====================================================
+   SAVE USER
+===================================================== */
+
+saveUserBtn.addEventListener(
+  'click',
+  saveUserDetails
+);
+
+
+function saveUserDetails() {
+
+  const name =
+    nameInput.value.trim();
+
+  const enteredBR =
+    brInput.value.trim();
+
+
+  if (!name) {
+
+    showModalError(
+      'Please enter your name.'
+    );
+
+    nameInput.focus();
+
+    return;
+  }
+
+
+  if (!enteredBR) {
+
+    showModalError(
+      'Please enter your BR Code.'
+    );
+
+    brInput.focus();
+
+    return;
+  }
+
+
+  setModalLoading(
+    true
+  );
+
+
+  validateBranch(
+    enteredBR,
+    function (response) {
+
+      setModalLoading(
+        false
+      );
+
+
+      if (
+        !response ||
+        !response.success
+      ) {
+
+        showModalError(
+          'Unable to validate BR Code. Please try again.'
+        );
+
+        return;
+      }
+
+
+      if (
+        !response.valid
+      ) {
+
+        showModalError(
+          response.message ||
+          'Invalid or inactive BR Code.'
+        );
+
+        return;
+      }
+
+
+      /*
+       * Server returned normalized BR Code.
+       */
+
+      userName =
+        name;
+
+      brCode =
+        response.branch.brCode;
+
+      branch =
+        response.branch;
+
+
+      /*
+       * Permanently store in browser.
+       */
+
+      localStorage.setItem(
+        STORAGE_KEYS.NAME,
+        userName
+      );
+
+      localStorage.setItem(
+        STORAGE_KEYS.BR_CODE,
+        brCode
+      );
+
+      localStorage.setItem(
+        STORAGE_KEYS.BRANCH,
+        JSON.stringify(
+          branch
+        )
+      );
+
+
+      hideUserModal();
+
+      clearChat();
+
+      showWelcome();
+    }
+  );
+}
+
+
+/* =====================================================
+   CHANGE USER / BRANCH
+===================================================== */
+
+changeUserBtn.addEventListener(
+  'click',
+  function () {
+
+    nameInput.value =
+      userName;
+
+    brInput.value =
+      brCode;
+
+    modalError.classList.remove(
+      'show'
+    );
+
+    branchInfo.classList.remove(
+      'show'
+    );
+
+    userModal.classList.add(
+      'show'
+    );
+
+    nameInput.focus();
+  }
+);
+
+
+/* =====================================================
+   BR CODE INPUT
+===================================================== */
+
+brInput.addEventListener(
+  'blur',
+  function () {
+
+    const value =
+      brInput.value.trim();
+
+    if (!value) {
+      return;
+    }
+
+    validateBranch(
+      value,
+      function (response) {
+
+        if (
+          response &&
+          response.success &&
+          response.valid
+        ) {
+
+          branchInfo.textContent =
+            response.branch.branchName +
+            (
+              response.branch.district
+                ? ' — ' +
+                  response.branch.district
+                : ''
+            );
+
+          branchInfo.classList.add(
+            'show'
+          );
+
+        } else {
+
+          branchInfo.classList.remove(
+            'show'
+          );
+        }
+      }
+    );
+  }
+);
+
+
+/* =====================================================
+   VALIDATE BRANCH
+===================================================== */
+
+function validateBranch(
+  value,
+  callback
+) {
+
+  jsonp(
+    'validatebranch',
+    {
+      brCode:
+        value
+    },
+    callback
+  );
+}
+
+
+/* =====================================================
+   WELCOME
+===================================================== */
+
+function showWelcome() {
+
+  const branchName =
+    branch &&
+    branch.branchName
+      ? branch.branchName
+      : 'your branch';
+
+
+  addBotMessage(
+
+    'Hello <strong>' +
+    escapeHtml(
+      userName
+    ) +
+    '</strong>!<br><br>' +
+
+    'You are connected to ' +
+
+    '<strong>' +
+    escapeHtml(
+      branchName
+    ) +
+    '</strong> ' +
+
+    '(' +
+    escapeHtml(
+      brCode
+    ) +
+    ').<br><br>' +
+
+    'How can I help you?'
+  );
+}
+
+
+/* =====================================================
+   CHAT SUBMIT
+===================================================== */
+
+chatForm.addEventListener(
+  'submit',
+  function (event) {
+
+    event.preventDefault();
+
+    // If we're awaiting a suggestion response, handle it
+    if (isAwaitingSuggestionResponse) {
+      handleSuggestionResponse();
+      return;
+    }
+
+    sendQuestion();
+  }
+);
+
+
+/* =====================================================
+   ENTER KEY
+===================================================== */
+
+questionInput.addEventListener(
+  'keydown',
+  function (event) {
+
+    if (
+      event.key === 'Enter' &&
+      !event.shiftKey
+    ) {
+
+      event.preventDefault();
+
+      if (isAwaitingSuggestionResponse) {
+        handleSuggestionResponse();
+      } else {
+        sendQuestion();
+      }
+    }
+  }
+);
+
+
+/* =====================================================
+   HANDLE SUGGESTION RESPONSE
+===================================================== */
+
+function handleSuggestionResponse() {
+  const input = questionInput.value.trim();
+  
+  if (!input) {
+    return;
+  }
+
+  const selectedIndex = parseInt(input) - 1;
+
+  if (isNaN(selectedIndex) || selectedIndex < 0 || selectedIndex >= currentSuggestions.length) {
+    addBotMessage(
+      'Please enter a valid number from the list above.'
+    );
+    questionInput.value = '';
+    questionInput.focus();
+    return;
+  }
+
+  // Check if "None of these" was selected (last item)
+  if (selectedIndex === currentSuggestions.length - 1) {
+    // Submit to Unanswered_Queries
+    submitUnansweredQuery(pendingQuestion);
+    return;
+  }
+
+  // Display the selected suggestion's answer
+  const suggestion = currentSuggestions[selectedIndex];
+  displaySuggestionAnswer(suggestion);
+}
+
+
+/* =====================================================
+   DISPLAY SUGGESTION ANSWER
+===================================================== */
+
+function displaySuggestionAnswer(suggestion) {
+  isAwaitingSuggestionResponse = false;
+  currentSuggestions = [];
+  questionInput.value = '';
+  questionInput.placeholder = 'Type your question...';
+  questionInput.focus();
+
+  // Format the answer with source info
+  let sourceInfo = 'Showing result for: Suggested Question from Knowledge Base';
+
+  addBotMessageWithSource(
+    suggestion.answer,
+    sourceInfo,
+    suggestion.answerType || 'TEXT'
+  );
+}
+
+
+/* =====================================================
+   SUBMIT UNANSWERED QUERY
+===================================================== */
+
+function submitUnansweredQuery(question) {
+  isAwaitingSuggestionResponse = false;
+  currentSuggestions = [];
+  questionInput.placeholder = 'Type your question...';
+  
+  // Send to server as unanswered
+  waiting = true;
+  sendBtn.disabled = true;
+
+  jsonp(
+    'ask',
+    {
+      name: userName,
+      brCode: brCode,
+      question: question
+    },
+    function (response) {
+      waiting = false;
+      sendBtn.disabled = false;
+      questionInput.value = '';
+      questionInput.focus();
+
+      if (!response) {
+        addBotMessage('Unable to contact the chatbot server.');
+        return;
+      }
+
+      if (!response.success) {
+        addBotMessage(escapeHtml(response.error || 'Unable to process your question.'));
+        return;
+      }
+
+      // Show the no-answer message with query ID
+      let html = escapeHtml(response.answer || 'Sorry, I could not find a suitable answer.');
+
+      if (response.queryId) {
+        html += '<div class="query-id">Query ID: <strong>' + escapeHtml(response.queryId) + '</strong></div>';
+      }
+
+      addBotMessage(html);
+    }
+  );
+}
+
+
+/* =====================================================
+   SEND QUESTION
+===================================================== */
+
+function sendQuestion() {
+
+  if (waiting) {
+    return;
+  }
+
+  // Reset suggestion state
+  isAwaitingSuggestionResponse = false;
+  currentSuggestions = [];
+  questionInput.placeholder = 'Type your question...';
+
+  const question =
+    questionInput.value.trim();
+
+
+  if (!question) {
+    return;
+  }
+
+
+  if (
+    !userName ||
+    !brCode
+  ) {
+
+    showUserModal();
+
+    return;
+  }
+
+
+  /*
+   * Display user's question.
+   */
+
+  addUserMessage(
+    escapeHtml(
+      question
+    )
+  );
+
+
+  questionInput.value =
+    '';
+
+  autoResize();
+
+
+  /*
+   * Typing indicator.
+   */
+
+  const typingId =
+    showTyping();
+
+
+  waiting =
+    true;
+
+  sendBtn.disabled =
+    true;
+
+
+  jsonp(
+    'ask',
+    {
+
+      name:
+        userName,
+
+      brCode:
+        brCode,
+
+      question:
+        question
+
+    },
+
+    function (response) {
+
+      removeTyping(
+        typingId
+      );
+
+
+      waiting =
+        false;
+
+      sendBtn.disabled =
+        false;
+
+
+      if (
+        !response
+      ) {
+
+        addBotMessage(
+          'Unable to contact the chatbot server.'
+        );
+
+        return;
+      }
+
+
+      if (
+        !response.success
+      ) {
+
+        addBotMessage(
+          escapeHtml(
+            response.error ||
+            'Unable to process your question.'
+          )
+        );
+
+        return;
+      }
+
+
+      /*
+       * Check if we have a direct answer
+       */
+      if (
+        response.answered === true
+      ) {
+
+        renderAnswer(
+          response
+        );
+
+        return;
+      }
+
+
+      /*
+       * No direct answer - check if we have suggestions
+       */
+      if (response.suggestions && response.suggestions.length > 0) {
+        // Show suggestions
+        showSuggestions(response.suggestions, question);
+        return;
+      }
+
+
+      /*
+       * No answer and no suggestions - log to unanswered
+       */
+      let html =
+        escapeHtml(
+          response.answer ||
+          'Sorry, I could not find a suitable answer.'
+        );
+
+
+      if (
+        response.queryId
+      ) {
+
+        html +=
+
+          '<div class="query-id">' +
+
+          'Query ID: <strong>' +
+
+          escapeHtml(
+            response.queryId
+          ) +
+
+          '</strong>' +
+
+          '</div>';
+      }
+
+
+      addBotMessage(
+        html
+      );
+    }
+  );
+}
+
+
+/* =====================================================
+   SHOW SUGGESTIONS
+===================================================== */
+
+function showSuggestions(suggestions, originalQuestion) {
+  isAwaitingSuggestionResponse = true;
+  currentSuggestions = suggestions;
+  pendingQuestion = originalQuestion;
+
+  let html = '<div class="suggestion-prompt">🤔 I couldn\'t find an exact match. Did you mean one of these?</div>';
+
+  suggestions.forEach((suggestion, index) => {
+    const num = index + 1;
+    const questionText = suggestion.question || 'Question ' + num;
+    html += '<div class="suggestion-item">' + num + '. ' + escapeHtml(questionText) + '</div>';
+  });
+
+  // Add "None of these" option
+  const noneNum = suggestions.length + 1;
+  html += '<div class="suggestion-item none">' + noneNum + '. None of these — submit as new query</div>';
+
+  html += '<div style="margin-top:12px;font-size:13px;color:var(--muted);">Please type the number (1-' + noneNum + ') and press Enter.</div>';
+
+  addBotMessage(html);
+
+  // Focus input and show placeholder
+  questionInput.focus();
+  questionInput.placeholder = 'Enter number (1-' + noneNum + ')...';
+}
+
+
+/* =====================================================
+   RENDER ANSWER
+===================================================== */
+
+function renderAnswer(
+  response
+) {
+
+  let answer =
+    response.answer || '';
+
+  let sourceInfo = '';
+
+  // Determine source info based on match type
+  if (response.matchType === 'EXACT') {
+    sourceInfo = 'Showing result for: Exact Question Match';
+  } else if (response.matchType === 'EXTERNAL') {
+    if (response.lookupBR) {
+      sourceInfo = 'Showing result for: ' + response.lookupBR + ' (External Source)';
+    } else {
+      sourceInfo = 'Showing result for: External Source';
+    }
+  } else if (response.matchType === 'BRANCH_LOOKUP' || response.lookupBR) {
+    sourceInfo = 'Showing result for: ' + (response.lookupBR || brCode);
+  } else if (response.matchType === 'KEYWORD') {
+    sourceInfo = 'Showing result for: Keyword Match';
+  } else if (response.source === 'External_Sources') {
+    if (response.lookupBR) {
+      sourceInfo = 'Showing result for: ' + response.lookupBR + ' (External Source)';
+    } else {
+      sourceInfo = 'Showing result for: External Source';
+    }
+  } else {
+    sourceInfo = 'Showing result for: ' + (response.lookupBR || brCode);
+  }
+
+  // If answer type is HTML, render HTML
+  if (
+    String(
+      response.answerType || ''
+    ).toUpperCase() ===
+    'HTML'
+  ) {
+
+    addBotMessageWithSource(
+      answer,
+      sourceInfo,
+      'HTML'
+    );
+
+  } else {
+
+    addBotMessageWithSource(
+      escapeHtml(
+        answer
+      )
+      .replace(
+        /\n/g,
+        '<br>'
+      ),
+      sourceInfo,
+      'TEXT'
+    );
+  }
+}
+
+
+/* =====================================================
+   ADD USER MESSAGE WITH TIMESTAMP
+===================================================== */
+
+function addUserMessage(
+  html
+) {
+
+  const wrapper =
+    document.createElement(
+      'div'
+    );
+
+  wrapper.className =
+    'message user';
+
+
+  const bubble =
+    document.createElement(
+      'div'
+    );
+
+  bubble.className =
+    'bubble';
+
+  // Content wrapper
+  const content = document.createElement('div');
+  content.className = 'bubble-content';
+  content.innerHTML = html;
+  bubble.appendChild(content);
+
+  // Footer with timestamp
+  const footer = document.createElement('div');
+  footer.className = 'bubble-footer';
+  
+  // Left side empty for user (alignment)
+  const leftSpan = document.createElement('span');
+  leftSpan.style.visibility = 'hidden';
+  leftSpan.textContent = ' ';
+  
+  // Timestamp on right
+  const timestampSpan = document.createElement('span');
+  timestampSpan.className = 'timestamp';
+  timestampSpan.textContent = getCurrentTimestamp();
+  
+  footer.appendChild(leftSpan);
+  footer.appendChild(timestampSpan);
+  bubble.appendChild(footer);
+
+  wrapper.appendChild(
+    bubble
+  );
+
+  chat.appendChild(
+    wrapper
+  );
+
+  scrollChat();
+}
+
+
+/* =====================================================
+   ADD BOT MESSAGE
+===================================================== */
+
+function addBotMessage(
+  html
+) {
+  const wrapper =
+    document.createElement(
+      'div'
+    );
+
+  wrapper.className =
+    'message bot';
+
+
+  const bubble =
+    document.createElement(
+      'div'
+    );
+
+  bubble.className =
+    'bubble';
+
+  // Content wrapper
+  const content = document.createElement('div');
+  content.className = 'bubble-content';
+  content.innerHTML = html;
+  bubble.appendChild(content);
+
+  // Footer with timestamp (only timestamp for regular bot messages)
+  const footer = document.createElement('div');
+  footer.className = 'bubble-footer';
+  
+  // Left side empty for alignment
+  const leftSpan = document.createElement('span');
+  leftSpan.style.visibility = 'hidden';
+  leftSpan.textContent = ' ';
+  
+  // Timestamp on right
+  const timestampSpan = document.createElement('span');
+  timestampSpan.className = 'timestamp';
+  timestampSpan.textContent = getCurrentTimestamp();
+  
+  footer.appendChild(leftSpan);
+  footer.appendChild(timestampSpan);
+  bubble.appendChild(footer);
+
+  wrapper.appendChild(
+    bubble
+  );
+
+  chat.appendChild(
+    wrapper
+  );
+
+  scrollChat();
+}
+
+
+/* =====================================================
+   ADD BOT MESSAGE WITH SOURCE INDICATOR
+===================================================== */
+
+function addBotMessageWithSource(
+  html,
+  sourceInfo,
+  answerType
+) {
+  const wrapper =
+    document.createElement(
+      'div'
+    );
+
+  wrapper.className =
+    'message bot';
+
+  const bubble =
+    document.createElement(
+      'div'
+    );
+
+  bubble.className =
+    'bubble';
+
+  // Content wrapper
+  const content = document.createElement('div');
+  content.className = 'bubble-content';
+  
+  if (answerType && answerType.toUpperCase() === 'HTML') {
+    content.innerHTML = html;
+  } else {
+    content.innerHTML = html;
+  }
+  bubble.appendChild(content);
+
+  // Footer with source and timestamp
+  const footer = document.createElement('div');
+  footer.className = 'bubble-footer';
+  
+  // Source on left
+  const sourceSpan = document.createElement('span');
+  sourceSpan.className = 'source';
+  sourceSpan.textContent = sourceInfo;
+  
+  // Timestamp on right
+  const timestampSpan = document.createElement('span');
+  timestampSpan.className = 'timestamp';
+  timestampSpan.textContent = getCurrentTimestamp();
+  
+  footer.appendChild(sourceSpan);
+  footer.appendChild(timestampSpan);
+  bubble.appendChild(footer);
+
+  wrapper.appendChild(
+    bubble
+  );
+
+  chat.appendChild(
+    wrapper
+  );
+
+  scrollChat();
+}
+
+
+/* =====================================================
+   GET CURRENT TIMESTAMP
+===================================================== */
+
+function getCurrentTimestamp() {
+  const now = new Date();
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const year = now.getFullYear();
+  return hours + ':' + minutes + ':' + seconds + ' • ' + day + '/' + month + '/' + year;
+}
+
+
+/* =====================================================
+   TYPING
+===================================================== */
+
+function showTyping() {
+
+  const id =
+    'typing-' +
+    Date.now();
+
+
+  const wrapper =
+    document.createElement(
+      'div'
+    );
+
+  wrapper.className =
+    'message bot';
+
+  wrapper.id =
+    id;
+
+
+  wrapper.innerHTML =
+
+    '<div class="bubble">' +
+
+      '<div class="typing">' +
+
+        '<span></span>' +
+        '<span></span>' +
+        '<span></span>' +
+
+      '</div>' +
+
+    '</div>';
+
+
+  chat.appendChild(
+    wrapper
+  );
+
+  scrollChat();
+
+
+  return id;
+}
+
+
+function removeTyping(
+  id
+) {
+
+  const element =
+    document.getElementById(
+      id
+    );
+
+  if (element) {
+
+    element.remove();
+  }
+}
+
+
+/* =====================================================
+   CLEAR CHAT
+===================================================== */
+
+function clearChat() {
+
+  chat.innerHTML =
+    '';
+}
+
+
+/* =====================================================
+   SCROLL
+===================================================== */
+
+function scrollChat() {
+
+  setTimeout(
+    function () {
+
+      chat.scrollTop =
+        chat.scrollHeight;
+
+    },
+    20
+  );
+}
+
+
+/* =====================================================
+   TEXTAREA AUTO RESIZE
+===================================================== */
+
+questionInput.addEventListener(
+  'input',
+  autoResize
+);
+
+
+function autoResize() {
+
+  questionInput.style.height =
+    'auto';
+
+  questionInput.style.height =
+    Math.min(
+      questionInput.scrollHeight,
+      120
+    ) + 'px';
+}
+
+
+/* =====================================================
+   MODAL ERROR
+===================================================== */
+
+function showModalError(
+  message
+) {
+
+  modalError.textContent =
+    message;
+
+  modalError.classList.add(
+    'show'
+  );
+}
+
+
+/* =====================================================
+   MODAL LOADING
+===================================================== */
+
+function setModalLoading(
+  loading
+) {
+
+  saveUserBtn.disabled =
+    loading;
+
+  saveUserBtn.textContent =
+    loading
+      ? 'Validating...'
+      : 'Continue';
+}
+
+
+/* =====================================================
+   JSONP CLIENT
+===================================================== */
+
+function jsonp(
+  action,
+  params,
+  callback
+) {
+
+  if (
+    !API_URL ||
+    API_URL ===
+      'YOUR_APPS_SCRIPT_WEB_APP_URL'
+  ) {
+
+    callback({
+
+      success: false,
+
+      error:
+        'Apps Script API URL has not been configured.'
+    });
+
+    return;
+  }
+
+
+  const callbackName =
+    'treasuryCallback_' +
+    Date.now() +
+    '_' +
+    Math.floor(
+      Math.random() * 100000
+    );
+
+
+  const script =
+    document.createElement(
+      'script'
+    );
+
+
+  const query =
+    new URLSearchParams();
+
+
+  query.set(
+    'action',
+    action
+  );
+
+
+  query.set(
+    'callback',
+    callbackName
+  );
+
+
+  Object.keys(
+    params || {}
+  ).forEach(
+    function (key) {
+
+      query.set(
+        key,
+        params[key]
+      );
+    }
+  );
+
+
+  const timeout =
+    setTimeout(
+      function () {
+
+        cleanup();
+
+        callback({
+
+          success: false,
+
+          error:
+            'The server did not respond in time.'
+        });
+
+      },
+      30000
+    );
+
+
+  window[callbackName] =
+    function (data) {
+
+      clearTimeout(
+        timeout
+      );
+
+      cleanup();
+
+      callback(
+        data
+      );
+    };
+
+
+  script.onerror =
+    function () {
+
+      clearTimeout(
+        timeout
+      );
+
+      cleanup();
+
+      callback({
+
+        success: false,
+
+        error:
+          'Unable to connect to the chatbot API.'
+      });
+    };
+
+
+  script.src =
+    API_URL +
+    (
+      API_URL.indexOf('?') >= 0
+        ? '&'
+        : '?'
+    ) +
+    query.toString();
+
+
+  document
+    .head
+    .appendChild(
+      script
+    );
+
+
+  function cleanup() {
+
+    try {
+      delete window[
+        callbackName
+      ];
+    } catch (error) {
+      window[
+        callbackName
+      ] = undefined;
+    }
+
+
+    if (
+      script.parentNode
+    ) {
+
+      script.parentNode.removeChild(
+        script
+      );
+    }
+  }
+}
+
+
+/* =====================================================
+   HTML ESCAPE
+===================================================== */
+
+function escapeHtml(
+  value
+) {
+
+  return String(
+    value || ''
+  )
+  .replace(
+    /&/g,
+    '&amp;'
+  )
+  .replace(
+    /</g,
+    '&lt;'
+  )
+  .replace(
+    />/g,
+    '&gt;'
+  )
+  .replace(
+    /"/g,
+    '&quot;'
+  )
+  .replace(
+    /'/g,
+    '&#039;'
+  );
+}
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Treasury WAN Pool IP & Gateway Details</title>
+    
+    <!-- LOCAL CSS -->
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="../css/buttons.bootstrap5.min.css">
+    <link rel="stylesheet" href="../css/all-in-one.css">
+   
+</head>
+<body>
+<div class="page-header">
+                <div class="page-header-left">
+                   <i class="bi bi-hdd-network-fill"></i>
+                    <div>
+                        <h1>Treasury WAN Pool IP & Gateway Details</h1>
+                        <p> Description  </p>
+                    </div>
+                </div>
+      <div class="export-buttons">
+            <button class="export-btn excel" id="exportExcelBtn">
+                <i class="bi bi-file-earmark-excel"></i> Excel
+            </button>
+            <button class="export-btn pdf" id="exportPdfBtn">
+                <i class="bi bi-file-earmark-pdf"></i> PDF
+            </button>
+            <button class="export-btn csv" id="exportCsvBtn">
+                <i class="bi bi-file-earmark-spreadsheet"></i> CSV
+            </button>
+        </div>
+            </div>
+
+<div class="main-wrapper">
+    <!-- Header with Export Buttons at Right End -->
+
+
+    <!-- Main Card -->
+    <div class="">
+        <div class="card-body">
+            <!-- Table -->
+            <div class="table-responsive">
+                <table id="treasuryNetworkTable" class="table table-hover" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Treasury Name</th>
+                            <th>BR Code</th>
+                            <th>Office Head</th>
+                            <th>Address</th>
+                            <th>PIN</th>
+                            <th>LAN Pool</th>
+                            <th>FatPipe Device IP (Gateway)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="7" class="text-center py-4">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2 text-muted">Loading treasury network data...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Export Toast Message -->
+    <div id="exportToast" class="export-toast">
+        <i class="bi bi-check-circle-fill"></i>
+        <span>Export completed!</span>
+    </div>
+</div>
+
+<!-- LOCAL SCRIPTS -->
+<script src="../js/jquery.min.js"></script>
+<script src="../js/bootstrap.bundle.min.js"></script>
+<script src="../js/jquery.dataTables.min.js"></script>
+<script src="../js/dataTables.bootstrap5.min.js"></script>
+<script src="../js/dataTables.buttons.min.js"></script>
+<script src="../js/buttons.bootstrap5.min.js"></script>
+<script src="../js/jszip.min.js"></script>
+<script src="../js/pdfmake.min.js"></script>
+<script src="../js/vfs_fonts.js"></script>
+<script src="../js/buttons.html5.min.js"></script>
+<script src="../js/buttons.print.min.js"></script>
+
+<script>
+(function() {
+    const API_KEY = 'AIzaSyBB1V3vJpNZ9X1GIF-YOwoa6YSt_iXMLo0';
+    const SPREADSHEET_ID = '105FU8biUFJETqboPumblZ1BJYv7TzKiOy7Jwfbn3zTw';
+    const SHEET_NAME = 'Treasuries';
+    const RANGE = 'A2:G';
+
+    let dataTable = null;
+
+    function loadTreasuryData() {
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(SHEET_NAME)}!${RANGE}?key=${API_KEY}`;
+        
+        $('#treasuryNetworkTable tbody').html(`
+            <tr><td colspan="7" class="text-center py-4"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div><p class="mt-2 text-muted">Loading treasury network data...</p></td>
+        `);
+        
+        fetch(url)
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) throw new Error(data.error.message);
+                const rows = data.values || [];
+                renderTable(rows);
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                $('#treasuryNetworkTable tbody').html(`
+                    <tr><td colspan="7" class="text-center py-4 text-danger">Failed to load data. Please check connection.</td></tr>
+                `);
+            });
+    }
+
+    function renderTable(rows) {
+        if (!rows || rows.length === 0) {
+            $('#treasuryNetworkTable tbody').html(`<tr><td colspan="7" class="text-center py-4">No records found</td>`);
+            return;
+        }
+
+        let tableData = [];
+        rows.forEach(row => {
+            let gatewayIP = (row[6] !== undefined && row[6] !== null) ? row[6].toString().trim().replace(/\s+/g, '') : '';
+            tableData.push([
+                (row[0] || '—'),
+                (row[1] || '—'),
+                (row[2] || '—'),
+                (row[3] || '—'),
+                (row[4] || '—'),
+                (row[5] || '—'),
+                gatewayIP || '—'
+            ]);
+        });
+        
+        let htmlRows = '';
+        tableData.forEach(row => {
+            const lanPoolDisplay = row[5] !== '—' ? `<span class="lan-pool">${escapeHtml(row[5])}</span>` : '<span class="empty-cell">—</span>';
+            const gatewayDisplay = row[6] !== '—' ? `<span class="gateway-ip"><i class="bi bi-router me-1"></i>${escapeHtml(row[6])}</span>` : '<span class="empty-cell">—</span>';
+            
+            htmlRows += `<tr>
+                <td><strong>${escapeHtml(row[0])}</strong></td>
+                <td>${escapeHtml(row[1])}</td>
+                <td>${escapeHtml(row[2])}</td>
+                <td>${escapeHtml(row[3])}</td>
+                <td>${escapeHtml(row[4])}</td>
+                <td>${lanPoolDisplay}</td>
+                <td>${gatewayDisplay}</td>
+            </tr>`;
+        });
+        
+        $('#treasuryNetworkTable tbody').html(htmlRows);
+        
+        if (dataTable) dataTable.destroy();
+        
+        dataTable = $('#treasuryNetworkTable').DataTable({
+            data: tableData,
+            columns: [
+                { title: 'Treasury Name' },
+                { title: 'BR Code' },
+                { title: 'Office Head' },
+                { title: 'Address' },
+                { title: 'PIN' },
+                { title: 'LAN Pool' },
+                { title: 'FatPipe Device IP (Gateway)' }
+            ],
+            paging: true,
+            pageLength: 25,
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, 'All']],
+            ordering: true,
+            scrollX: true,
+            autoWidth: false,
+            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rtip',
+            buttons: [
+                { extend: 'excelHtml5', text: 'Excel', className: 'btn-excel-hidden', title: 'Treasury_Network_Details' },
+                { extend: 'pdfHtml5', text: 'PDF', className: 'btn-pdf-hidden', title: 'Treasury_Network_Details', orientation: 'landscape', pageSize: 'A4' },
+                { extend: 'csvHtml5', text: 'CSV', className: 'btn-csv-hidden', title: 'Treasury_Network_Details' }
+            ],
+            language: {
+                search: '',
+                searchPlaceholder: 'Search treasury, BR Code, address...',
+                lengthMenu: 'Show _MENU_ entries',
+                info: 'Showing _START_ to _END_ of _TOTAL_ entries'
+            }
+        });
+        
+        // Attach export button handlers
+        $('#exportExcelBtn').off('click').on('click', function() {
+            dataTable.button('.btn-excel-hidden').trigger();
+            showExportToast('Excel export started');
+        });
+        
+        $('#exportPdfBtn').off('click').on('click', function() {
+            dataTable.button('.btn-pdf-hidden').trigger();
+            showExportToast('PDF export started');
+        });
+        
+        $('#exportCsvBtn').off('click').on('click', function() {
+            dataTable.button('.btn-csv-hidden').trigger();
+            showExportToast('CSV export started');
+        });
+    }
+    
+    function showExportToast(message) {
+        const $toast = $('#exportToast');
+        $toast.find('span').text(message);
+        $toast.addClass('show');
+        setTimeout(() => $toast.removeClass('show'), 2000);
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+        return String(text).replace(/[&<>"']/g, m => map[m]);
+    }
+
+    $(document).ready(function() {
+        loadTreasuryData();
+    });
+})();
+</script>
+</body>
+</html>

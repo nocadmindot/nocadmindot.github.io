@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asset Report | PC & IP Inventory (SD‑WAN)</title>
+    
+    <!-- LOCAL CSS - Using existing resources from parent folder -->
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="../css/select2.min.css">
+    <link rel="stylesheet" href="../css/select2-bootstrap-5-theme.min.css">
+    <link rel="stylesheet" href="../css/sweetalert2.min.css">
+	       <link rel="stylesheet" href="../css/all-in-one.css">
+    <!-- LOCAL JS - Using existing resources from parent folder -->
+    <script src="../js/jquery.min.js"></script>
+    <script src="../js/bootstrap.bundle.min.js"></script>
+    <script src="../js/jquery.dataTables.min.js"></script>
+    <script src="../js/dataTables.bootstrap5.min.js"></script>
+    <script src="../js/select2.min.js"></script>
+    <script src="../js/sweetalert2.all.min.js"></script>
+    
+    <style>
+
+        
+        .badge-working {
+            background-color: #10b981;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            display: inline-block;
+            text-align: center;
+        }
+        
+        .badge-not-working {
+            background-color: #ef4444;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            display: inline-block;
+            text-align: center;
+        }
+        
+        .badge-confirm {
+            background-color: #0f5b9c;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            display: inline-block;
+            text-align: center;
+        }
+        
+        .badge-pending {
+            background-color: #f59e0b;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            display: inline-block;
+            text-align: center;
+        }
+        
+        .lan-pool-badge {
+            background-color: #e6f0fa;
+            color: #0f5b9c;
+            padding: 4px 10px;
+            border-radius: 30px;
+            /*font-size: 0.7rem;*/
+            font-weight: 500;
+            font-family: monospace;
+            display: inline-block;
+        }
+        
+        .ip-link {
+            color: #0f5b9c;
+            text-decoration: none;
+            font-weight: 500;
+            font-family: monospace;
+        }
+        
+        .ip-link:hover {
+            text-decoration: underline;
+        }
+        
+
+        
+  
+        
+        /* Select2 Customization */
+        .select2-container--bootstrap-5 .select2-selection {
+            border: 1px solid #e2e8f0;
+            border-radius: 40px;
+            padding: 8px 16px;
+            min-height: 46px;
+        }
+        
+        .badge-count {
+            background: white;
+            color: #0f5b9c;
+            padding: 4px 12px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            margin-left: 10px;
+            font-weight: 600;
+        }
+        
+
+
+    </style>
+</head>
+<body>
+    <!-- header -->
+<div class="page-header">
+                <div class="page-header-left">
+                 <i class="bi bi-pc-display"></i>
+                    <div>
+                        <h1>PC Asset & IP Inventory Report</h1>
+                        <p>Treasury SD‑WAN- Onboarded Asset Details</p>
+                    </div>
+                </div>
+            </div>
+<div class="main-wrapper">
+
+    <!-- main card with tabs -->
+    <div class="card-db">
+        <!-- tab navigation -->
+        <ul class="nav nav-tabs-custom nav-tabs" id="assetTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button" role="tab">
+                    <i class="bi bi-grid-3x3-gap-fill"></i>All Assets
+                    <span class="badge-count" id="allCount">0</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="district-tab" data-bs-toggle="tab" data-bs-target="#district" type="button" role="tab">
+                    <i class="bi bi-pin-map-fill"></i>District Wise View
+                    <span class="badge-count" id="districtCount">0</span>
+                </button>
+            </li>
+        </ul>
+
+        <!-- tab panes -->
+        <div class="tab-content">
+            <!-- pane 1: ALL Assets with LAN Pool after IP -->
+            <div class="tab-pane fade show active" id="all" role="tabpanel">
+                <div class="table-responsive">
+                    <table id="assetFullTable" class="table table-hover" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>District</th>
+                                <th>Treasury / Branch</th>
+                                <th>Branch Code</th>
+                                <th>Asset ID</th>
+                                <th>IP Address</th>
+                                <th>LAN Pool</th>
+                                <th>Working Status</th>
+                                <th>Confirm Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="9" class="text-center py-5">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p class="mt-2 text-muted">Loading asset inventory ...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- pane 2: District wise view with Export Button -->
+            <div class="tab-pane fade" id="district" role="tabpanel">
+                <div class="filter-panel">
+                    <div style="flex: 2; min-width: 300px;">
+                        <label>
+                            <i class="bi bi-building"></i> Select District
+                        </label>
+                        <select id="districtSelect" class="form-select" style="width: 100%;"></select>
+                    </div>
+                    <div class="action-buttons">
+                        <button id="viewDistrictBtn" class="btn-view">
+                            <i class="bi bi-search"></i> View Assets
+                        </button>
+                        <button id="exportCsvBtn" class="btn-export" style="display: none;">
+                            <i class="bi bi-filetype-csv"></i> Export to CSV
+                        </button>
+                    </div>
+                    <div class="ms-auto">
+                        <div class="district-stats">
+                            <span><i class="bi bi-database"></i> <span id="districtRowCount">0</span> assets</span>
+                            <span><i class="bi bi-building"></i> <span id="totalDistricts">0</span> districts</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="table-responsive">
+                    <table id="districtAssetTable" class="table table-hover" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>District</th>
+                                <th>Treasury / Branch</th>
+                                <th>Branch Code</th>
+                                <th>Asset ID</th>
+                                <th>IP Address</th>
+                                <th>LAN Pool</th>
+                                <th>Working Status</th>
+                                <th>Confirm Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="9" class="text-center py-5">
+                                    <i class="bi bi-arrow-up-circle fs-1 text-muted"></i>
+                                    <p class="mt-2 text-muted">Select a district and click "View Assets"</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    // ----------------------------------------------
+    // GLOBALS & CONFIG
+    // ----------------------------------------------
+    const API_KEY = 'AIzaSyDc8tegwi2rgHyDFYm7uWBqVqQ7Fwb3uWM';
+    const SPREADSHEET_ID = '1bhkHXrG_eJxpqhSGBu13UyFjmBV7m8lMemDwcQ-4hlI';
+    const DATA_SHEET = 'Data';
+    const SETTINGS_SHEET = 'settings';
+    const RANGE_DATA = 'A2:H';
+    const RANGE_SETTINGS = 'A:D';
+
+    // Data storage
+    let currentFilteredAssets = [];  // Store currently displayed assets for export
+    let currentSelectedDistrict = '';
+    let settingsMap = {};
+    let districtList = [];
+    let allAssets = [];
+
+    // ----------------------------------------------
+    // 1. LOAD SETTINGS (District mapping & LAN Pool)
+    // ----------------------------------------------
+    async function loadSettings() {
+        try {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${SETTINGS_SHEET}!${RANGE_SETTINGS}?key=${API_KEY}`;
+            const resp = await fetch(url);
+            const data = await resp.json();
+            const rows = data.values || [];
+            
+            const map = {};
+            
+            for(let i = 1; i < rows.length; i++) {
+                const row = rows[i];
+                const district = row[0] ? row[0].trim() : "";
+                const treasury = row[1] ? row[1].trim() : "";
+                const branch = row[2] ? row[2].trim() : "";
+                const lanPool = row[3] ? row[3].trim() : "";
+                
+                if(branch) {
+                    map[branch] = { district, treasury, lanPool, branchCode: branch.length >= 4 ? branch.slice(-4) : branch };
+                }
+            }
+            
+            settingsMap = map;
+            return map;
+        } catch(e) {
+            console.error("Error loading settings:", e);
+            return {};
+        }
+    }
+
+    // ----------------------------------------------
+    // 2. LOAD ALL ASSETS
+    // ----------------------------------------------
+    async function loadAllAssets() {
+        try {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${DATA_SHEET}!${RANGE_DATA}?key=${API_KEY}`;
+            const resp = await fetch(url);
+            const data = await resp.json();
+            const rows = data.values || [];
+            
+            allAssets = rows.map(row => ({
+                id: row[0] ? parseInt(row[0]) : null,
+                district: (row[1] || "").trim(),
+                treasury: (row[2] || "").trim(),
+                branch: (row[3] || "").trim(),
+                assetId: (row[4] || "").trim(),
+                ipAssigned: (row[5] || "").trim(),
+                workingStatus: (row[6] || "").trim() === "Yes" ? "Yes" : "No",
+                confirm: (row[7] || "").trim() === "Yes" ? "Yes" : "No"
+            }));
+            
+            // If district/treasury is empty in asset, try to map from settings
+            allAssets.forEach(asset => {
+                if ((!asset.district || !asset.treasury) && asset.branch && settingsMap[asset.branch]) {
+                    if (!asset.district) asset.district = settingsMap[asset.branch].district;
+                    if (!asset.treasury) asset.treasury = settingsMap[asset.branch].treasury;
+                }
+            });
+            
+            // Extract unique districts from assets
+            const districtsSet = new Set();
+            allAssets.forEach(asset => {
+                if (asset.district && asset.district !== '') {
+                    districtsSet.add(asset.district);
+                }
+            });
+            districtList = Array.from(districtsSet).sort((a, b) => a.localeCompare(b));
+            
+            // Populate district dropdown
+            const $select = $('#districtSelect');
+            $select.empty().append('<option value="">-- Choose a district --</option>');
+            districtList.forEach(d => {
+                $select.append(`<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`);
+            });
+            
+            $('#districtSelect').select2({
+                theme: 'bootstrap-5',
+                width: '100%',
+                placeholder: 'Type or select district',
+                allowClear: true
+            });
+            
+            $('#totalDistricts').text(districtList.length);
+            $('#districtCount').text(allAssets.length);
+            
+            // Sort by treasury name
+            allAssets.sort((a, b) => (a.treasury || a.branch || "").localeCompare(b.treasury || b.branch || ""));
+            
+            renderAllTable(allAssets);
+            document.getElementById('allCount').textContent = allAssets.length;
+            
+            return allAssets;
+        } catch(e) {
+            console.error("Error loading assets:", e);
+            document.querySelector('#assetFullTable tbody').innerHTML = `
+                <tr>
+                    <td colspan="9" class="text-center py-5 text-danger">
+                        <i class="bi bi-exclamation-triangle-fill fs-1"></i>
+                        <p class="mt-2">Failed to load asset data. Please check connection.</p>
+                    </td>
+                </tr>`;
+            return [];
+        }
+    }
+
+    // ----------------------------------------------
+    // 3. RENDER ALL ASSETS TABLE (LAN Pool after IP)
+    // ----------------------------------------------
+    function renderAllTable(assets) {
+        const tbody = document.querySelector('#assetFullTable tbody');
+        
+        if (!assets || assets.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="9" class="text-center py-5">No asset records found</td></tr>`;
+            if ($.fn.DataTable.isDataTable('#assetFullTable')) {
+                $('#assetFullTable').DataTable().destroy();
+            }
+            return;
+        }
+
+        let htmlRows = '';
+        let serialNo = 1;
+        
+        assets.forEach(asset => {
+            const districtName = asset.district || '—';
+            const treasuryName = asset.treasury || asset.branch || '—';
+            const branchCode = (asset.branch && asset.branch.length >= 4) ? asset.branch.slice(-4) : (asset.branch || '—');
+            const lanPool = getLanPool(asset.branch);
+            
+            htmlRows += `<tr>
+                <td class="serial-cell">${serialNo++}</td>
+                <td>${escapeHtml(districtName)}</td>
+                <td><strong>${escapeHtml(treasuryName)}</strong></td>
+                <td><code>${escapeHtml(branchCode)}</code></td>
+                <td><code>${escapeHtml(asset.assetId || '—')}</code></td>
+                <td>${formatIp(asset.ipAssigned)}</td>
+                <td>${getLanPoolBadge(lanPool)}</td>
+                <td>${getWorkingBadge(asset.workingStatus)}</td>
+                <td>${getConfirmBadge(asset.confirm)}</td>
+            </tr>`;
+        });
+        
+        tbody.innerHTML = htmlRows;
+
+        // Initialize DataTable
+        if ($.fn.DataTable.isDataTable('#assetFullTable')) {
+            $('#assetFullTable').DataTable().destroy();
+        }
+        
+        $('#assetFullTable').DataTable({
+            paging: true,
+            pageLength: 25,
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, 'All']],
+            ordering: true,
+            scrollX: true,
+            autoWidth: false,
+            language: {
+                search: '',
+                searchPlaceholder: 'Search treasury, asset ID, IP...',
+                lengthMenu: 'Show _MENU_ entries',
+                info: 'Showing _START_ to _END_ of _TOTAL_ assets',
+                infoEmpty: 'Showing 0 to 0 of 0 assets',
+                infoFiltered: '(filtered from _MAX_ total assets)'
+            },
+            columnDefs: [
+                { targets: 0, width: '50px', orderable: true },
+                { targets: 1, width: '150px' },
+                { targets: 2, width: '200px' },
+                { targets: 3, width: '100px' },
+                { targets: 4, width: '160px' },
+                { targets: 5, width: '130px' },
+                { targets: 6, width: '120px' },
+                { targets: 7, width: '120px' },
+                { targets: 8, width: '120px' }
+            ],
+            order: [[2, 'asc']]
+        });
+    }
+
+    // ----------------------------------------------
+    // 4. DISTRICT WISE VIEW (LAN Pool after IP)
+    // ----------------------------------------------
+    function renderDistrictTable(selectedDistrict) {
+        const $tbody = $('#districtAssetTable tbody');
+        const $info = $('#districtRowCount');
+
+        // Destroy existing DataTable
+        if ($.fn.DataTable.isDataTable('#districtAssetTable')) {
+            $('#districtAssetTable').DataTable().destroy();
+        }
+        
+        $tbody.empty();
+
+        if (!selectedDistrict || !allAssets.length) {
+            $tbody.html('<tr><td colspan="9" class="text-center py-4"><span class="text-muted">No district selected or data missing</span></td></tr>');
+            $info.text('0');
+            $('#exportCsvBtn').hide();
+            return;
+        }
+
+        // Filter assets by district
+        const filtered = allAssets.filter(asset => {
+            const assetDistrict = asset.district || '';
+            return assetDistrict.toLowerCase() === selectedDistrict.toLowerCase();
+        });
+
+        currentFilteredAssets = filtered;
+        currentSelectedDistrict = selectedDistrict;
+        $info.text(filtered.length);
+
+        // Show export button if there are records
+        if (filtered.length > 0) {
+            $('#exportCsvBtn').show();
+        } else {
+            $('#exportCsvBtn').hide();
+        }
+
+        if (filtered.length === 0) {
+            $tbody.html(`
+                <tr>
+                    <td colspan="9" class="text-center py-5">
+                        <i class="bi bi-building-slash fs-1 text-muted"></i>
+                        <p class="mt-2">No assets found for district "${escapeHtml(selectedDistrict)}"</p>
+                    </td>
+                </tr>
+            `);
+            return;
+        }
+
+        // Sort filtered assets by treasury name
+        filtered.sort((a, b) => (a.treasury || a.branch || "").localeCompare(b.treasury || b.branch || ""));
+        
+        let html = '';
+        let serialNo = 1;
+        
+        filtered.forEach(asset => {
+            const districtName = asset.district || selectedDistrict;
+            const treasuryName = asset.treasury || asset.branch || '—';
+            const branchCode = (asset.branch && asset.branch.length >= 4) ? asset.branch.slice(-4) : (asset.branch || '—');
+            const lanPool = getLanPool(asset.branch);
+            
+            html += `<tr>
+                <td class="serial-cell">${serialNo++}</td>
+                <td>${escapeHtml(districtName)}</td>
+                <td><strong>${escapeHtml(treasuryName)}</strong></td>
+                <td><code>${escapeHtml(branchCode)}</code></td>
+                <td><code>${escapeHtml(asset.assetId || '—')}</code></td>
+                <td>${formatIp(asset.ipAssigned)}</td>
+                <td>${getLanPoolBadge(lanPool)}</td>
+                <td>${getWorkingBadge(asset.workingStatus)}</td>
+                <td>${getConfirmBadge(asset.confirm)}</td>
+            </tr>`;
+        });
+
+        $tbody.html(html);
+
+        // Initialize DataTable
+        $('#districtAssetTable').DataTable({
+            paging: true,
+            pageLength: 25,
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, 'All']],
+            ordering: true,
+            scrollX: true,
+            autoWidth: false,
+            language: {
+                search: '',
+                searchPlaceholder: 'Search in results...',
+                lengthMenu: 'Show _MENU_ entries',
+                emptyTable: 'No assets available for selected district'
+            },
+            destroy: true,
+            columnDefs: [
+                { targets: 0, width: '50px' },
+                { targets: 1, width: '150px' },
+                { targets: 2, width: '200px' },
+                { targets: 3, width: '100px' },
+                { targets: 4, width: '160px' },
+                { targets: 5, width: '130px' },
+                { targets: 6, width: '120px' },
+                { targets: 7, width: '120px' },
+                { targets: 8, width: '120px' }
+            ],
+            order: [[2, 'asc']]
+        });
+    }
+
+    // ----------------------------------------------
+    // 5. EXPORT TO CSV
+    // ----------------------------------------------
+    function exportToCSV() {
+        if (!currentFilteredAssets.length) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'No Data',
+                text: 'No asset data available to export. Please select a district and view assets first.',
+                timer: 2000,
+                showConfirmButton: false
+            });
+            return;
+        }
+        
+        // Prepare CSV headers
+        const headers = [
+            'Sl No',
+            'District',
+            'Treasury / Branch',
+            'Branch Code',
+            'Asset ID',
+            'IP Address',
+            'LAN Pool',
+            'Working Status',
+            'Confirm Status'
+        ];
+        
+        // Prepare CSV rows
+        const rows = [];
+        let serialNo = 1;
+        
+        currentFilteredAssets.forEach(asset => {
+            const districtName = asset.district || currentSelectedDistrict;
+            const treasuryName = asset.treasury || asset.branch || '—';
+            const branchCode = (asset.branch && asset.branch.length >= 4) ? asset.branch.slice(-4) : (asset.branch || '—');
+            const lanPool = getLanPool(asset.branch) || '—';
+            const ipAddress = asset.ipAssigned || '—';
+            const workingStatus = asset.workingStatus === 'Yes' ? 'Working' : 'Not Working';
+            const confirmStatus = asset.confirm === 'Yes' ? 'Confirmed' : 'Pending';
+            
+            rows.push([
+                serialNo++,
+                districtName,
+                treasuryName,
+                branchCode,
+                asset.assetId || '—',
+                ipAddress,
+                lanPool,
+                workingStatus,
+                confirmStatus
+            ]);
+        });
+        
+        // Sort rows by Treasury/Branch name
+        rows.sort((a, b) => a[2].localeCompare(b[2]));
+        
+        // Reset serial numbers after sorting
+        rows.forEach((row, idx) => {
+            row[0] = idx + 1;
+        });
+        
+        // Combine headers and rows
+        const csvContent = [headers, ...rows];
+        
+        // Convert to CSV string
+        const csvString = csvContent.map(row => 
+            row.map(cell => {
+                // Escape quotes and wrap in quotes if contains comma or quotes
+                const cellStr = String(cell);
+                if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
+                    return `"${cellStr.replace(/"/g, '""')}"`;
+                }
+                return cellStr;
+            }).join(',')
+        ).join('\n');
+        
+        // Add BOM for UTF-8 encoding
+        const blob = new Blob(['\uFEFF' + csvString], { type: 'text/csv;charset=utf-8;' });
+        
+        // Create download link
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `asset_report_${currentSelectedDistrict.replace(/[^a-zA-Z0-9]/g, '_')}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        Swal.fire({
+            icon: 'success',
+            title: 'Export Successful!',
+            text: `${currentFilteredAssets.length} records exported for district: ${currentSelectedDistrict}`,
+            timer: 2000,
+            showConfirmButton: false
+        });
+    }
+
+    // ----------------------------------------------
+    // UTILITY FUNCTIONS
+    // ----------------------------------------------
+    function getLanPool(branch) {
+        if (branch && settingsMap[branch] && settingsMap[branch].lanPool) {
+            return settingsMap[branch].lanPool;
+        }
+        return null;
+    }
+    
+    function getLanPoolBadge(lanPool) {
+        if (!lanPool) return '<span class="empty-cell">—</span>';
+        return `<span class="lan-pool-badge"><i class="bi bi-hdd-network me-1"></i>${escapeHtml(lanPool)}</span>`;
+    }
+
+    function formatIp(ip) {
+        if (!ip || ip === '—') return '<span class="empty-cell">—</span>';
+        return `<a href="tel:${escapeHtml(ip)}" class="ip-link">${escapeHtml(ip)}</a>`;
+    }
+
+    function getWorkingBadge(status) {
+        if (status === 'Yes') {
+            return '<span class="badge-working"><i class="bi bi-check-circle-fill me-1"></i>Working</span>';
+        } else {
+            return '<span class="badge-not-working"><i class="bi bi-x-circle-fill me-1"></i>Not Working</span>';
+        }
+    }
+
+    function getConfirmBadge(status) {
+        if (status === 'Yes') {
+            return '<span class="badge-confirm"><i class="bi bi-check2-circle me-1"></i>Confirmed</span>';
+        } else {
+            return '<span class="badge-pending"><i class="bi bi-clock-history me-1"></i>Pending</span>';
+        }
+    }
+
+    function escapeHtml(text) {
+        if (text === undefined || text === null) return '—';
+        if (typeof text !== 'string') text = String(text);
+        const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        };
+        return text.replace(/[&<>"']/g, m => map[m]);
+    }
+
+    // ----------------------------------------------
+    // INITIALIZATION
+    // ----------------------------------------------
+    $(document).ready(async function() {
+        // Show loading
+        Swal.fire({
+            title: 'Loading Asset Data',
+            text: 'Please wait while we fetch the inventory...',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+        
+        // Load settings first
+        await loadSettings();
+        
+        // Load assets
+        await loadAllAssets();
+        
+        Swal.close();
+        
+        // View button click for district wise
+        $('#viewDistrictBtn').on('click', function() {
+            const selected = $('#districtSelect').val();
+            if (!selected) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'No District Selected',
+                    text: 'Please select a district first',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                return;
+            }
+            renderDistrictTable(selected);
+        });
+        
+        // Export CSV button click
+        $('#exportCsvBtn').on('click', exportToCSV);
+        
+        // Tab change animation - adjust columns if needed
+        $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function(e) {
+            if ($(e.target).attr('id') === 'district-tab' && $('#districtSelect').val()) {
+                setTimeout(() => {
+                    if ($.fn.DataTable.isDataTable('#districtAssetTable')) {
+                        $('#districtAssetTable').DataTable().columns.adjust();
+                    }
+                }, 100);
+            }
+            if ($(e.target).attr('id') === 'all-tab') {
+                setTimeout(() => {
+                    if ($.fn.DataTable.isDataTable('#assetFullTable')) {
+                        $('#assetFullTable').DataTable().columns.adjust();
+                    }
+                }, 100);
+            }
+        });
+    });
+})();
+</script>
+</body>
+</html>
