@@ -1233,7 +1233,7 @@ $('#viewConfirmBtn').on('click', async function() {
     
     $btn.html('<i class="bi bi-arrow-repeat"></i> Loading...');
     $btn.prop('disabled', true);
-    $statusMsg.hide().removeClass('error success info');
+    $statusMsg.removeClass('error success info').show();
     showLoading();
     
     try {
@@ -1383,38 +1383,40 @@ function renderConfirmRecords(records) {
         const rowIndex = $(this).data('row');
         const branch = $(this).data('branch');
         const $btn = $(this);
+        const $row = $btn.closest('tr');
         const $statusMsg = $('#confirmStatusMsg');
         
-        const confirmResult = await Swal.fire({
-            title: 'Confirm Shutdown?',
-            text: `Are you sure you want to confirm shutdown for ${branch}?`,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#059669',
-            cancelButtonColor: '#64748b',
-            confirmButtonText: 'Yes, Confirm!'
-        });
-        
-        if (!confirmResult.isConfirmed) return;
-        
-        $btn.html('<i class="bi bi-arrow-repeat"></i>');
+        // No confirmation dialog. Show progress directly in this row.
+        $btn.html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
         $btn.prop('disabled', true);
-        showLoading();
         
         try {
             await updateSheetViaAppsScript('UPDATE_CONFIRM', { rowIndex: rowIndex });
             
-            Swal.fire({
-                icon: 'success',
-                title: 'Confirmed!',
-                text: `Shutdown confirmation updated for ${branch}`,
-                timer: 2000,
-                showConfirmButton: false
+            // Remove the completed row immediately from the pending list.
+            // This makes the row disappear/move out without rebuilding the table.
+            $row.fadeOut(250, function() {
+                $(this).remove();
+                
+                const $table = $('#confirmTable');
+                const remainingRows = $table.find('tbody tr').length;
+                
+                if (remainingRows === 0) {
+                    renderConfirmRecords([]);
+                } else {
+                    // Re-number remaining rows.
+                    $table.find('tbody tr').each(function(index) {
+                        $(this).children('td').first().text(index + 1);
+                    });
+                    $table.closest('.table-responsive').next('.mt-2').text(`Total: ${remainingRows} pending request(s)`);
+                    updatePendingBadge(remainingRows);
+                    
+                    const $searchInput = $('#confirmSearchInput');
+                    if ($searchInput.length) {
+                        $searchInput.trigger('keyup');
+                    }
+                }
             });
-            
-            setTimeout(() => {
-                $('#viewConfirmBtn').click();
-            }, 1000);
             
         } catch (err) {
             console.error('Error:', err);
@@ -1422,8 +1424,6 @@ function renderConfirmRecords(records) {
             Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to update. Please try again.' });
             $btn.html('<i class="bi bi-check2"></i> Confirm');
             $btn.prop('disabled', false);
-        } finally {
-            hideLoading();
         }
     });
     
