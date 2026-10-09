@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Internal Dev Sandbox - Kerala Treasury NOC Project Staging -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>NOC Admin</title>
+    <title>NOC Admin | Network Operations Center</title>
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     
@@ -94,8 +93,7 @@
             position: absolute;
             top: calc(100% + 10px);
             right: 0;
-           /* background: var(--bg-secondary);*/
-		   background: #fff0;
+            background: var(--bg-secondary);
             border: 1px solid var(--border-color);
             border-radius: 16px;
             box-shadow: 0 20px 60px var(--shadow-color);
@@ -108,8 +106,6 @@
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 9999;
             overflow: hidden;
-			backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
         }
         .user-popup-dropdown.show {
             opacity: 1;
@@ -201,9 +197,9 @@
             justify-content: flex-end;
         }
         .user-popup-footer .logout-btn {
-            background: #ff3e3e1c;
-            border: 1px solid #ff7474;
-            color: #f88;
+            background: transparent;
+            border: 1px solid #dc2626;
+            color: #dc2626;
             padding: 5px 16px;
             border-radius: 30px;
             font-size: 0.8rem;
@@ -238,8 +234,7 @@
             background: var(--dropdown-hover);
         }
         body.dark-theme .user-popup-dropdown {
-          /*  background: var(--bg-secondary);*/
-			  background: #1e293bc4;
+            background: var(--bg-secondary);
             border-color: var(--border-color);
         }
         body.dark-theme .user-popup-header {
@@ -247,6 +242,15 @@
         }
         body.dark-theme .user-popup-avatar-large {
             background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+        }
+
+        /* Sidebar toggle styles */
+        .sidebar.collapsed {
+            display: none !important;
+        }
+        .content-area.expanded {
+            margin-left: 0 !important;
+            width: 100% !important;
         }
 
         /* Mobile responsive */
@@ -339,119 +343,6 @@
             70% { box-shadow: 0 0 0 6px rgba(220, 38, 38, 0); }
             100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
         }
-
-        /* Notification Popup */
-        .notif-popup-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 9998;
-            display: none;
-           
-        }
-        .notif-popup-overlay.show { display: block; }
-
-        .notif-popup-dropdown {
-            position: absolute;
-            top: calc(100% + 8px);
-            right: 0;
-            /*background: var(--bg-secondary);*/
-			background: #1e293b00;
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            box-shadow: 0 20px 60px var(--shadow-color);
-            width: 380px;
-            max-height: 460px;
-            display: flex;
-            flex-direction: column;
-            opacity: 0;
-            visibility: hidden;
-            transform: translateY(-10px) scale(0.96);
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 9999;
-            overflow: hidden;
-			backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-        }
-        .notif-popup-dropdown.show {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0) scale(1);
-        }
-        .notif-popup-header {
-            padding: 14px 18px 10px 18px;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-weight: 600;
-            font-size: 0.95rem;
-            background: var(--bg-secondary);
-            flex-shrink: 0;
-        }
-        .notif-popup-header .notif-count {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            font-weight: 400;
-        }
-        .notif-popup-body {
-            padding: 8px 0;
-            overflow-y: auto;
-            flex: 1;
-            max-height: 340px;
-        }
-        .notif-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 18px;
-            cursor: pointer;
-            transition: background 0.15s;
-            border-bottom: 1px solid var(--border-color);
-            text-decoration: none;
-            color: var(--text-primary);
-        }
-        .notif-item:last-child { border-bottom: none; }
-        .notif-item:hover { background: var(--dropdown-hover); }
-        .notif-item .notif-icon {
-            font-size: 1.3rem;
-            width: 30px;
-            text-align: center;
-            flex-shrink: 0;
-            color: var(--logo-color);
-        }
-        .notif-item .notif-count-badge {
-            font-size: 0.7rem;
-            color: #fff;
-            background: #dc2626;
-            padding: 1px 8px;
-            border-radius: 12px;
-            font-weight: 600;
-            min-width: 20px;
-            text-align: center;
-            flex-shrink: 0;
-            line-height: 1.4;
-        }
-        .notif-item .notif-name {
-            font-size: 0.9rem;
-            font-weight: 500;
-            flex: 1;
-            word-break: break-word;
-        }
-        .notif-empty {
-            padding: 30px 18px;
-            text-align: center;
-            color: var(--text-muted);
-            font-size: 0.9rem;
-        }
-        @media (max-width: 480px) {
-            .notif-popup-dropdown {
-                width: 310px;
-                right: -10px;
-                max-height: 400px;
-            }
-            .notif-popup-body { max-height: 280px; }
-        }
-
         .flash-news-container.hidden { display: none !important; }
         .cache-info-badge {
             position: fixed;
@@ -466,9 +357,6 @@
             font-family: monospace;
             cursor: pointer;
         }
-		html {
-  scrollbar-color: var(--primary) var(--scrollbar-track);
-}
     </style>
     
     <!-- DEVICE DETECTION & MOBILE REDIRECT -->
@@ -522,7 +410,7 @@
                         <input type="text" class="form-control" id="username" placeholder="Enter username">
                     </div>
                     <div class="mb-3">
-                        <label for="" class="form-label">Password</label>
+                        <label for="password" class="form-label">Password</label>
                         <input type="password" class="form-control" id="password" placeholder="Enter password">
                     </div>
                     <div class="text-center mb-2" style="font-size: 11px; color: var(--text-muted);">
@@ -572,40 +460,12 @@
                     </button>
                 </div>
                 <div class="d-flex align-items-center">
-				                  
-                    <!-- NOTIFICATION ICON -->
-                    <div class="notification-icon-wrapper" id="notifIconWrapper">
-                        <button class="notification-icon" id="notifIconBtn" title="Notifications">
-                           <i class="bi bi-bell"></i>
+                    <div class="notification-icon-wrapper" id="notificationIconWrapper">
+                        <button class="notification-icon" id="notificationIconBtn" title="Unread Chats">
+                           <i class="bi bi-chat-square-text"></i>
                         </button>
-                        <span class="notification-badge zero" id="notifBadge">0</span>
+                        <span class="notification-badge zero" id="notificationBadge">0</span>
                     </div>
-                    <!-- Notification Popup -->
-                    <div class="notif-popup-overlay" id="notifPopupOverlay"></div>
-                    <div class="notif-popup-dropdown" id="notifPopupDropdown">
-                        <div class="notif-popup-header">
-                            <span>Notifications</span>
-                            <span class="notif-count" id="notifCountLabel">0 items</span>
-                        </div>
-                        <div class="notif-popup-body" id="notifPopupBody">
-                            <div class="notif-empty">Loading notifications...</div>
-                        </div>
-                    </div>
-                    <!-- Mail box -->
-					 <div class="notification-icon-wrapper" id="chat-assist">
-                        <a class="notification-icon" id="chat-assist" title="Mail Box" href="./mailbox/index.html" target="_blank"> 
-                        <i class="bi bi-envelope-at"></i>
-                        </a>
-                        <span class="notification-badge zero" id="notifBadge">0</span>
-                    </div>
-                    <!-- assistant ICON -->
-                    <div class="notification-icon-wrapper" id="chat-assist">
-                        <a class="notification-icon" id="chat-assist" title="chat" href="http://itcelltreasury.github.io/noc-assistant/" target="_blank"> 
-                         <i class="bi bi-robot"></i>
-                        </a>
-                        <span class="notification-badge zero" id="notifBadge">0</span>
-                    </div>
-					 <!-- theme switch -->
                     <div class="theme-switch-wrapper">
                         <label class="theme-switch">
                             <input type="checkbox" id="theme-toggle">
@@ -673,7 +533,7 @@
                     <div class="text-muted p-3"><div class="loading-spinner"></div> Loading menu...</div>
                 </div>
             </div>
-            <div class="content-area">
+            <div class="content-area" id="contentArea">
                 <iframe id="content-frame" src="about:blank" title="Content"></iframe>
                 <div class="loading" id="loading"><div class="loading-spinner"></div> Loading...</div>
                 <div class="welcome-message" id="welcome-message">
@@ -694,19 +554,58 @@
             </div>
         </div>
     </div>
-<!-- Notification Sound -->
-<audio id="notificationSound" preload="auto">
-    <source src="notification.mp3" type="audio/mpeg">
-</audio>
+
     <!-- Local JS resources -->
     <script src="./js/bootstrap.bundle.min.js?v=20250102"></script>
     <script src="./js/main-script.js?v=20250102"></script>
     
-   <script>
+    <script>
         // ======================== APP VERSION & DAILY CACHE CLEAR ========================
         const APP_VERSION_ID = "20250102_v5_FIXED";
         const LAST_CLEAR_DATE_KEY = "lastCacheClearDate";
         
+        // ======================== SIDEBAR TOGGLE FUNCTIONALITY ========================
+        function initSidebarToggle() {
+            const toggleBtn = document.getElementById('desktopSidebarToggle');
+            const sidebar = document.getElementById('desktopSidebarContainer');
+            const contentArea = document.getElementById('contentArea');
+            
+            if (!toggleBtn || !sidebar) {
+                console.warn('Sidebar toggle elements not found');
+                return;
+            }
+            
+            // Check if sidebar is collapsed from localStorage
+            const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+            if (isCollapsed) {
+                sidebar.classList.add('collapsed');
+                if (contentArea) contentArea.classList.add('expanded');
+            }
+            
+            toggleBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                sidebar.classList.toggle('collapsed');
+                if (contentArea) contentArea.classList.toggle('expanded');
+                
+                // Save state
+                const collapsed = sidebar.classList.contains('collapsed');
+                localStorage.setItem('sidebarCollapsed', collapsed ? 'true' : 'false');
+                
+                // Resize iframe when sidebar toggles
+                setTimeout(() => {
+                    const iframe = document.getElementById('content-frame');
+                    if (iframe && iframe.contentWindow) {
+                        try {
+                            iframe.contentWindow.dispatchEvent(new Event('resize'));
+                        } catch(e) {}
+                    }
+                    window.dispatchEvent(new Event('resize'));
+                }, 300);
+            });
+        }
+
         // ======================== USER POPUP FUNCTIONS ========================
         function getUserInitials(name) {
             if (!name) return 'U';
@@ -744,320 +643,14 @@
             }
         }
 
-        // ======================== NOTIFICATION SYSTEM ========================
-        let notifItems = [];
-        let notifInterval = null;
-        let isNotifInitialized = false;
-        let notificationRetryCount = 0;
-        const MAX_RETRIES = 3;
-
-        // Fetch notifications from Dashboard sheet with retry logic
-        async function fetchNotifications(retryCount = 0) {
-            try {
-                const SPREADSHEET_ID = '1jd1xZe9x2mrZm5KAwGT12vMNYjbrnynsmelNKeK95jc';
-                const API_KEY = 'AIzaSyBB1V3vJpNZ9X1GIF-YOwoa6YSt_iXMLo0';
-                const sheetName = 'Dashboard';
-                const range = 'A:G';
-                const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}!${range}?key=${API_KEY}&_=${Date.now()}`;
-                
-                console.log('[Notification] Fetching notifications...');
-                const response = await fetch(url);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                
-                if (data.error) { 
-                    console.warn('Notification fetch error:', data.error); 
-                    return []; 
-                }
-                
-                if (!data.values || data.values.length < 2) {
-                    console.log('[Notification] No data values found');
-                    return [];
-                }
-                
-                const rows = data.values;
-                const items = [];
-                // Expected columns: A: Bg Color, B: Text Color, C: Icon, D: Count, E: Item Name, F: Link, G: Show (Yes/No)
-                for (let i = 1; i < rows.length; i++) {
-                    const row = rows[i];
-                    if (row.length < 7) continue;
-                    const show = (row[6] || '').toString().trim();
-                    if (show !== 'Yes') continue;
-                    const icon = (row[2] || 'bi bi-bell').toString().trim();
-                    const countStr = (row[3] || '0').toString().trim();
-                    const count = parseInt(countStr) || 0;
-                    // Skip items with count 0
-                    if (count === 0) continue;
-                    const name = (row[4] || '').toString().trim();
-                    const link = (row[5] || '').toString().trim();
-                    if (!name) continue;
-                    items.push({ icon, count, name, link });
-                }
-                console.log('[Notification] Items found:', items.length);
-                return items;
-            } catch (e) {
-                console.warn('Notification fetch error:', e);
-                // Retry logic
-                if (retryCount < MAX_RETRIES) {
-                    console.log(`[Notification] Retrying... (${retryCount + 1}/${MAX_RETRIES})`);
-                    await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
-                    return fetchNotifications(retryCount + 1);
-                }
-                return [];
-            }
-        }
-
-        // Render notifications in popup
-        function renderNotifications(items) {
-    const body = document.getElementById('notifPopupBody');
-    const badge = document.getElementById('notifBadge');
-    const countLabel = document.getElementById('notifCountLabel');
-    
-    console.log('[Notification] Rendering items:', items ? items.length : 0);
-    
-    if (!body) {
-        console.warn('[Notification] Body element not found');
-        return;
-    }
-    
-    if (!items || items.length === 0) {
-        body.innerHTML = `<div class="notif-empty"><i class="bi bi-bell-slash" style="font-size:1.8rem;display:block;margin-bottom:8px;"></i>No notifications</div>`;
-        if (badge) { 
-            badge.textContent = '0'; 
-            badge.classList.add('zero'); 
-            badge.style.display = 'none';
-        }
-        if (countLabel) countLabel.textContent = '0 items';
-        return;
-    }
-    
-    let html = '';
-    const totalItems = items.length;
-    items.forEach(item => {
-        const iconHtml = item.icon ? `<i class="${item.icon}"></i>` : '<i class="bi bi-bell"></i>';
-        const countDisplay = item.count > 0 ? `<span class="notif-count-badge">${item.count}</span>` : '';
-        html += `<div class="notif-item" data-link="${item.link}" data-name="${item.name}">
-            <div class="notif-icon">${iconHtml}</div>
-            ${countDisplay}
-            <span class="notif-name">${escapeHtml(item.name)}</span>
-        </div>`;
-    });
-    body.innerHTML = html;
-    
-    // ALWAYS update badge, even if no items
-    if (badge) {
-        if (totalItems > 0) {
-            badge.textContent = totalItems > 99 ? '99+' : totalItems;
-            badge.classList.remove('zero');
-            badge.style.display = 'flex';
-        } else {
-            badge.textContent = '0';
-            badge.classList.add('zero');
-            badge.style.display = 'none';
-        }
-    }
-    if (countLabel) countLabel.textContent = `${totalItems} item${totalItems > 1 ? 's' : ''}`;
-
-    // Click handler for each item
-    body.querySelectorAll('.notif-item').forEach(el => {
-        el.addEventListener('click', function(e) {
-            const link = this.dataset.link;
-            if (link) {
-                loadUrlInIframe(link);
-                hideNotifPopup();
-            }
-        });
-    });
-}
-        // Update notifications (fetch + render)
-// Replace your updateNotifications function with this:
-
-async function updateNotifications(forceShow = false) {
-    console.log('[Notification] Updating notifications...');
-    
-    try {
-        // Show loading state only if forceShow is true
-        const body = document.getElementById('notifPopupBody');
-        if (body && forceShow) {
-            body.innerHTML = `<div class="notif-empty"><div class="loading-spinner"></div> Loading notifications...</div>`;
-        }
-        
-        const items = await fetchNotifications();
-        const previousCount = notifItems ? notifItems.length : 0;
-        const currentCount = items.length;
-        
-        console.log(`[Notification] Previous: ${previousCount}, Current: ${currentCount}`);
-        
-        // Store current items
-        notifItems = items;
-        
-        // Play sound if there are new notifications and it's not first load
-        if (currentCount > previousCount && isNotifInitialized) {
-            console.log('[Notification] New notification detected!');
-            playNotificationSound();
-            
-            // Animate badge for new notifications
-            const badge = document.getElementById('notifBadge');
-            if (badge) {
-                badge.style.animation = 'none';
-                setTimeout(() => {
-                    badge.style.animation = 'pulse-red 0.5s ease 3';
-                }, 10);
-            }
-        }
-        
-        // Mark as initialized
-        if (!isNotifInitialized) {
-            isNotifInitialized = true;
-        }
-        
-        // ALWAYS render notifications, regardless of forceShow
-        renderNotifications(items);
-        return items;
-    } catch (error) {
-        console.error('[Notification] Update failed:', error);
-        // Show error state
-        const body = document.getElementById('notifPopupBody');
-        if (body) {
-            body.innerHTML = `<div class="notif-empty"><i class="bi bi-exclamation-triangle" style="font-size:1.8rem;display:block;margin-bottom:8px;"></i>Failed to load notifications<br><small style="font-size:0.8rem;cursor:pointer;" onclick="refreshNotifications()">Click to retry</small></div>`;
-        }
-        throw error;
-    }
-}
-        // Initialize notification system
-       function initNotifSystem() {
-    console.log('[Notification] Initializing...');
-    
-    // Clear any existing interval
-    if (notifInterval) {
-        clearInterval(notifInterval);
-        notifInterval = null;
-    }
-    
-    // Reset initialization flag
-    isNotifInitialized = false;
-    notificationRetryCount = 0;
-    
-    // Show loading state in badge
-    const badge = document.getElementById('notifBadge');
-    if (badge) {
-        badge.textContent = '...';
-        badge.classList.remove('zero');
-        badge.style.display = 'flex';
-    }
-    
-    // First fetch - force immediate rendering
-    updateNotifications(true).then(() => {
-        console.log('[Notification] Initial load complete');
-        
-        // Set interval for periodic updates
-        notifInterval = setInterval(() => {
-            if (window.isAuthenticated) {
-                updateNotifications(false);
-            }
-        }, 15000);
-    }).catch(err => {
-        console.warn('[Notification] Initial load failed, will retry in 5 seconds');
-        // Retry after 5 seconds
-        setTimeout(() => {
-            if (window.isAuthenticated) {
-                initNotifSystem();
-            }
-        }, 5000);
-    });
-}
-        // Force refresh notifications
-        async function refreshNotifications() {
-            console.log('[Notification] Force refresh...');
-            if (notifInterval) {
-                clearInterval(notifInterval);
-                notifInterval = null;
-            }
-            await updateNotifications(true);
-            // Restart interval
-            notifInterval = setInterval(() => {
-                if (window.isAuthenticated) {
-                    updateNotifications(false);
-                }
-            }, 60000);
-        }
-
-        // ======================== NOTIFICATION POPUP FUNCTIONS ========================
-
-        function showNotifPopup() {
-            const popup = document.getElementById('notifPopupDropdown');
-            const overlay = document.getElementById('notifPopupOverlay');
-            if (popup) popup.classList.add('show');
-            if (overlay) overlay.classList.add('show');
-        }
-
-        function hideNotifPopup() {
-            const popup = document.getElementById('notifPopupDropdown');
-            const overlay = document.getElementById('notifPopupOverlay');
-            if (popup) popup.classList.remove('show');
-            if (overlay) overlay.classList.remove('show');
-        }
-
-        function toggleNotifPopup() {
-            const popup = document.getElementById('notifPopupDropdown');
-            if (popup && popup.classList.contains('show')) {
-                hideNotifPopup();
-            } else {
-                showNotifPopup();
-            }
-        }
-
-        // ======================== NOTIFICATION SOUND FUNCTIONS ========================
-        function playNotificationSound() {
-            try {
-                const audio = document.getElementById('notificationSound');
-                if (audio) {
-                    audio.currentTime = 0;
-                    const playPromise = audio.play();
-                    if (playPromise !== undefined) {
-                        playPromise.catch(error => {
-                            console.log('Notification sound play failed:', error);
-                        });
-                    }
-                }
-            } catch (e) {
-                console.log('Error playing notification sound:', e);
-            }
-        }
-
-        // Escape HTML
-        function escapeHtml(str) {
-            if (!str) return '';
-            return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-        }
-
-        // Load URL in iframe (reuse existing function from main-script)
-        function loadUrlInIframe(url) {
-            const iframe = document.getElementById('content-frame');
-            const loading = document.getElementById('loading');
-            const welcomeMessage = document.getElementById('welcome-message');
-            if (!iframe) return;
-            if (welcomeMessage) welcomeMessage.style.display = 'none';
-            if (loading) loading.style.display = 'flex';
-            let fullUrl = url;
-            if (fullUrl.includes('?')) {
-                fullUrl += `&_=${Date.now()}`;
-            } else {
-                fullUrl += `?_=${Date.now()}`;
-            }
-            iframe.onload = function() { if (loading) loading.style.display = 'none'; };
-            iframe.onerror = function() { if (loading) loading.style.display = 'none'; alert('Error loading page: ' + fullUrl); };
-            iframe.src = fullUrl;
-        }
-
-        // ======================== OVERRIDE FUNCTIONS FOR USER ========================
         function updateNavbarUser(userData) {
-            if (!userData) { console.warn('updateNavbarUser: No user data'); return; }
+            if (!userData) {
+                console.warn('updateNavbarUser: No user data provided');
+                return;
+            }
+            
             console.log('Updating navbar with user data:', userData);
+            
             const username = userData.username || 'User';
             const userId = userData.userId || userData.username || '—';
             const email = userData.email || '—';
@@ -1065,57 +658,109 @@ async function updateNotifications(forceShow = false) {
             const imageUrl = userData.imageUrl || null;
             const loginTime = userData.loginTime || new Date().toISOString();
             
+            // Update navbar avatar
             const avatarContainer = document.getElementById('navbarUserAvatar');
             const avatarText = document.getElementById('navbarAvatarText');
-            if (avatarContainer) {
-                const existingImg = avatarContainer.querySelector('img');
-                if (existingImg) existingImg.remove();
-                if (imageUrl && imageUrl.trim() !== '' && imageUrl.trim() !== 'null') {
-                    const img = document.createElement('img');
-                    img.src = imageUrl;
-                    img.alt = username;
-                    img.onerror = function() { this.style.display = 'none'; if (avatarText) { avatarText.style.display = 'flex'; avatarText.textContent = getUserInitials(username); } };
-                    img.onload = function() { if (avatarText) avatarText.style.display = 'none'; };
-                    avatarContainer.appendChild(img);
+            
+            if (!avatarContainer) {
+                console.warn('Avatar container not found');
+                return;
+            }
+            
+            // Clear existing image
+            const existingImg = avatarContainer.querySelector('img');
+            if (existingImg) existingImg.remove();
+            
+            if (imageUrl && imageUrl.trim() !== '' && imageUrl.trim() !== 'null') {
+                const img = document.createElement('img');
+                img.src = imageUrl;
+                img.alt = username;
+                img.onerror = function() {
+                    console.warn('Failed to load avatar image:', imageUrl);
+                    this.style.display = 'none';
+                    if (avatarText) {
+                        avatarText.style.display = 'flex';
+                        avatarText.textContent = getUserInitials(username);
+                    }
+                };
+                img.onload = function() {
+                    console.log('Avatar image loaded successfully');
                     if (avatarText) avatarText.style.display = 'none';
-                } else {
-                    if (avatarText) { avatarText.style.display = 'flex'; avatarText.textContent = getUserInitials(username); }
+                };
+                avatarContainer.appendChild(img);
+                if (avatarText) avatarText.style.display = 'none';
+            } else {
+                if (avatarText) {
+                    avatarText.style.display = 'flex';
+                    avatarText.textContent = getUserInitials(username);
                 }
             }
-            const nameSpan = document.getElementById('navbarUserName');
-            if (nameSpan) nameSpan.textContent = username.length > 15 ? username.substring(0,14)+'…' : username;
             
-            // Popup
+            // Update navbar username
+            const nameSpan = document.getElementById('navbarUserName');
+            if (nameSpan) {
+                const displayName = username.length > 15 ? username.substring(0, 14) + '…' : username;
+                nameSpan.textContent = displayName;
+            }
+            
+            // Update popup
             const popupAvatar = document.getElementById('popupAvatar');
             const popupAvatarText = document.getElementById('popupAvatarText');
+            
             if (popupAvatar) {
-                const existingImg = popupAvatar.querySelector('img');
-                if (existingImg) existingImg.remove();
+                const existingPopupImg = popupAvatar.querySelector('img');
+                if (existingPopupImg) existingPopupImg.remove();
+                
                 if (imageUrl && imageUrl.trim() !== '' && imageUrl.trim() !== 'null') {
                     const img = document.createElement('img');
                     img.src = imageUrl;
                     img.alt = username;
-                    img.onerror = function() { this.style.display = 'none'; if (popupAvatarText) { popupAvatarText.style.display = 'flex'; popupAvatarText.textContent = getUserInitials(username); } };
-                    img.onload = function() { if (popupAvatarText) popupAvatarText.style.display = 'none'; };
+                    img.onerror = function() {
+                        this.style.display = 'none';
+                        if (popupAvatarText) {
+                            popupAvatarText.style.display = 'flex';
+                            popupAvatarText.textContent = getUserInitials(username);
+                        }
+                    };
+                    img.onload = function() {
+                        if (popupAvatarText) popupAvatarText.style.display = 'none';
+                    };
                     popupAvatar.appendChild(img);
                     if (popupAvatarText) popupAvatarText.style.display = 'none';
                 } else {
-                    if (popupAvatarText) { popupAvatarText.style.display = 'flex'; popupAvatarText.textContent = getUserInitials(username); }
+                    if (popupAvatarText) {
+                        popupAvatarText.style.display = 'flex';
+                        popupAvatarText.textContent = getUserInitials(username);
+                    }
                 }
             }
+            
             const popupUserName = document.getElementById('popupUserName');
             if (popupUserName) popupUserName.textContent = username;
+            
             const popupUserRole = document.getElementById('popupUserRole');
-            if (popupUserRole) popupUserRole.textContent = userId.includes('BR') ? 'Branch User' : 'NOC Admin';
+            if (popupUserRole) {
+                popupUserRole.textContent = userId.includes('BR') ? 'Branch User' : 'NOC Admin';
+            }
+            
             const popupUserId = document.getElementById('popupUserId');
             if (popupUserId) popupUserId.textContent = userId;
+            
             const popupUserEmail = document.getElementById('popupUserEmail');
             if (popupUserEmail) popupUserEmail.textContent = email;
+            
             const popupUserTreasury = document.getElementById('popupUserTreasury');
             if (popupUserTreasury) popupUserTreasury.textContent = treasury || '—';
+            
             try {
                 const date = new Date(loginTime);
-                const formatted = date.toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+                const formatted = date.toLocaleString('en-IN', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
                 const popupLoginTime = document.getElementById('popupUserLoginTime');
                 if (popupLoginTime) popupLoginTime.textContent = formatted;
             } catch(e) {
@@ -1125,12 +770,14 @@ async function updateNotifications(forceShow = false) {
         }
 
         // ======================== OVERRIDE FUNCTIONS ========================
+        // Store original functions
         const origDisplayLoggedInUser = window.displayLoggedInUser;
         const origLoadMenuData = window.loadMenuData;
         const origCheckExistingSession = window.checkExistingSession;
         const origLogout = window.logout;
         const origHandleLogin = window.handleLogin;
 
+        // Override displayLoggedInUser
         window.displayLoggedInUser = function() {
             const storedUser = localStorage.getItem('currentUser');
             if (storedUser) {
@@ -1139,10 +786,13 @@ async function updateNotifications(forceShow = false) {
                     currentUser = userData;
                     window.currentUser = userData;
                     updateNavbarUser(userData);
-                } catch (e) { console.error('Error parsing user data:', e); }
+                } catch (e) {
+                    console.error('Error parsing user data:', e);
+                }
             }
         };
 
+        // Override checkExistingSession
         window.checkExistingSession = function() {
             const storedUser = localStorage.getItem('currentUser');
             if (storedUser) {
@@ -1151,16 +801,25 @@ async function updateNotifications(forceShow = false) {
                     const loginTime = new Date(userData.loginTime);
                     const now = new Date();
                     const hoursSinceLogin = (now - loginTime) / (1000 * 60 * 60);
-                    if (hoursSinceLogin > 24) { window.logout(); return; }
+                    
+                    if (hoursSinceLogin > 24) {
+                        window.logout();
+                        return;
+                    }
+                    
                     isAuthenticated = true;
                     currentUser = userData;
                     window.isAuthenticated = true;
                     window.currentUser = userData;
+                    
                     const loginOverlay = document.getElementById('loginOverlay');
                     const dashboardContainer = document.getElementById('dashboardContainer');
+                    
                     loginOverlay.style.display = 'none';
                     dashboardContainer.style.display = 'block';
+                    
                     updateNavbarUser(userData);
+                    
                     if (typeof window.loadMenuData === 'function') {
                         window.loadMenuData(userData.menuSheet);
                     }
@@ -1168,10 +827,8 @@ async function updateNotifications(forceShow = false) {
                         if (typeof window.fetchAndDisplayFlashNews === 'function') {
                             window.fetchAndDisplayFlashNews();
                         }
-                        // Initialize notification system
-                        if (typeof window.initNotifSystem === 'function') {
-                            console.log('[System] Initializing notification system...');
-                            window.initNotifSystem();
+                        if (typeof window.initNotificationSystem === 'function') {
+                            window.initNotificationSystem();
                         }
                     }, 100);
                 } catch (e) {
@@ -1181,6 +838,7 @@ async function updateNotifications(forceShow = false) {
             }
         };
 
+        // Override loadMenuData
         window.loadMenuData = function(menuSheetName) {
             if (typeof origLoadMenuData === 'function') {
                 origLoadMenuData(menuSheetName);
@@ -1194,6 +852,7 @@ async function updateNotifications(forceShow = false) {
             }
         };
 
+        // Override logout
         window.logout = function() {
             if (typeof origLogout === 'function') {
                 origLogout.apply(this, arguments);
@@ -1210,41 +869,31 @@ async function updateNotifications(forceShow = false) {
                 const passwordField = document.getElementById('password');
                 if (usernameField) usernameField.value = '';
                 if (passwordField) passwordField.value = '';
-                const badge = document.getElementById('notifBadge');
-                if (badge) { badge.textContent = '0'; badge.classList.add('zero'); badge.style.display = 'none'; }
-                document.title = 'NOC Admin | Network Operations Center';
-                if (notifInterval) { clearInterval(notifInterval); notifInterval = null; }
-                isNotifInitialized = false;
+                const badge = document.getElementById('notificationBadge');
+                if (badge) { badge.textContent = '0'; badge.classList.add('zero'); }
+                document.title = 'NOC Admin';
             }
             hideUserPopup();
-            hideNotifPopup();
-        };
-
-        window.handleLogin = function() {
-            if (typeof origHandleLogin === 'function') {
-                origHandleLogin.apply(this, arguments);
-                // After login, initialize notifications
-                setTimeout(() => {
-                    if (window.isAuthenticated && typeof window.initNotifSystem === 'function') {
-                        console.log('[System] Initializing notification system after login...');
-                        window.initNotifSystem();
-                    }
-                }, 500);
-            }
         };
 
         // ======================== INITIALIZATION ========================
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('[System] DOM loaded, initializing...');
+            console.log('[System] Initializing...');
             
+            // Init sidebar toggle
+            initSidebarToggle();
+            
+            // Init theme
             if (typeof window.initTheme === 'function') {
                 window.initTheme();
             }
+            
             const themeToggle = document.getElementById('theme-toggle');
             if (themeToggle && typeof window.toggleTheme === 'function') {
                 themeToggle.addEventListener('change', window.toggleTheme);
             }
             
+            // Login button
             const loginBtn = document.getElementById('loginBtn');
             if (loginBtn) {
                 loginBtn.addEventListener('click', function() {
@@ -1254,11 +903,19 @@ async function updateNotifications(forceShow = false) {
                 });
             }
             
+            // Enter key handlers
             const username = document.getElementById('username');
             const password = document.getElementById('password');
+            
             if (username) {
-                username.addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); if (password) password.focus(); } });
+                username.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (password) password.focus();
+                    }
+                });
             }
+            
             if (password) {
                 password.addEventListener('keypress', (e) => {
                     if (e.key === 'Enter') {
@@ -1270,11 +927,7 @@ async function updateNotifications(forceShow = false) {
                 });
             }
             
-            if (typeof window.initDesktopSidebarToggle === 'function') {
-                window.initDesktopSidebarToggle();
-            }
-            
-            // User popup events
+            // User popup event listeners
             const userSection = document.getElementById('navbarUserSection');
             if (userSection) {
                 userSection.addEventListener('click', function(e) {
@@ -1282,13 +935,20 @@ async function updateNotifications(forceShow = false) {
                     toggleUserPopup();
                 });
             }
+            
             const overlay = document.getElementById('userPopupOverlay');
             if (overlay) {
-                overlay.addEventListener('click', function() { hideUserPopup(); });
+                overlay.addEventListener('click', function() {
+                    hideUserPopup();
+                });
             }
+            
             document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') { hideUserPopup(); }
+                if (e.key === 'Escape') {
+                    hideUserPopup();
+                }
             });
+            
             const logoutBtn = document.getElementById('popupLogoutBtn');
             if (logoutBtn) {
                 logoutBtn.addEventListener('click', function() {
@@ -1298,30 +958,13 @@ async function updateNotifications(forceShow = false) {
                     }
                 });
             }
-
-            // Notification popup events
-            const notifBtn = document.getElementById('notifIconBtn');
-            const notifOverlay = document.getElementById('notifPopupOverlay');
-            if (notifBtn) {
-                notifBtn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    toggleNotifPopup();
-                });
-            }
-            if (notifOverlay) {
-                notifOverlay.addEventListener('click', function() {
-                    hideNotifPopup();
-                });
-            }
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') { hideNotifPopup(); }
-            });
-
+            
             // Check existing session
             if (typeof window.checkExistingSession === 'function') {
                 window.checkExistingSession();
             }
             
+            // Focus username
             setTimeout(() => {
                 if (!isAuthenticated && username) {
                     username.focus();
@@ -1335,19 +978,9 @@ async function updateNotifications(forceShow = false) {
         window.hideUserPopup = hideUserPopup;
         window.toggleUserPopup = toggleUserPopup;
         window.getUserInitials = getUserInitials;
-        window.showNotifPopup = showNotifPopup;
-        window.hideNotifPopup = hideNotifPopup;
-        window.toggleNotifPopup = toggleNotifPopup;
-        window.updateNotifications = updateNotifications;
-        window.initNotifSystem = initNotifSystem;
-        window.refreshNotifications = refreshNotifications;
-        window.fetchNotifications = fetchNotifications;
-        window.renderNotifications = renderNotifications;
-        window.loadUrlInIframe = loadUrlInIframe;
-        window.playNotificationSound = playNotificationSound;
+        window.initSidebarToggle = initSidebarToggle;
 
-        console.log('[System] Navbar user & notification system initialized');
-		
+        console.log('[System] Navbar user system initialized');
     </script>
 </body>
 </html>

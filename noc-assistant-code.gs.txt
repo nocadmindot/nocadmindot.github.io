@@ -1,0 +1,2772 @@
+/*******************************************************
+ * TREASURY CHATBOT - CHAT API
+ *
+ * Google Apps Script Backend
+ *
+ * Spreadsheet:
+ * 1VZo0vCSmWJG2Ty5y1EqgYgndE8mRW24bpEhMzQaUjgA
+ *
+ * Required sheets:
+ *   Branches
+ *   Knowledge_Base
+ *   External_Sources
+ *   Settings
+ *   Unanswered_Queries
+ *******************************************************/
+
+
+const CONFIG = {
+
+  SPREADSHEET_ID:
+    '1VZo0vCSmWJG2Ty5y1EqgYgndE8mRW24bpEhMzQaUjgA',
+
+  SHEETS: {
+
+    BRANCHES:
+      'Branches',
+
+    KNOWLEDGE:
+      'Knowledge_Base',
+
+    EXTERNAL:
+      'External_Sources',
+
+    SETTINGS:
+      'Settings',
+
+    UNANSWERED:
+      'Unanswered_Queries'
+  },
+
+  DEFAULTS: {
+
+    BOT_NAME:
+      'NOC Assistant',
+
+    WELCOME_MESSAGE:
+      'Hello! How can I help you?',
+
+    NO_ANSWER:
+      'Sorry, I could not find a suitable answer for your request. but has been recorded for review.',
+
+    INVALID_BRANCH:
+      'The BR Code you entered is not available or is inactive.',
+
+    ERROR:
+      'Sorry, something went wrong while processing your request.'
+  },
+
+  MAX_KB_ROWS:
+    5000,
+
+  /*
+   * Minimum score after a REAL match has been found.
+   * Priority alone can NEVER create a match.
+   */
+  MIN_MATCH_SCORE:
+    5,
+
+  /*
+   * Maximum suggestions to show when no direct match found
+   */
+  MAX_SUGGESTIONS:
+    3
+};
+
+
+/* =====================================================
+   GET API
+===================================================== */
+
+function doGet(e) {
+
+  try {
+
+    e = e || {};
+    e.parameter = e.parameter || {};
+
+    const action =
+      String(
+        e.parameter.action || ''
+      )
+      .trim()
+      .toLowerCase();
+
+    let result;
+
+    switch (action) {
+
+      case 'config':
+
+        result =
+          getConfig_();
+
+        break;
+
+
+      case 'validatebranch':
+
+        result =
+          validateBranch_(
+            e.parameter.brCode || ''
+          );
+
+        break;
+
+
+      case 'ask':
+
+        result =
+          askQuestion_(
+            e.parameter.name || '',
+            e.parameter.brCode || '',
+            e.parameter.question || ''
+          );
+
+        break;
+
+
+      case 'health':
+
+        result = {
+
+          success: true,
+
+          message:
+            'Treasury Chat API is working',
+
+          timestamp:
+            new Date().toISOString()
+        };
+
+        break;
+
+
+      default:
+
+        result = {
+
+          success: false,
+
+          error:
+            'Invalid action.'
+        };
+    }
+
+    return jsonResponse_(
+      result,
+      e.parameter.callback
+    );
+
+  } catch (error) {
+
+    return jsonResponse_({
+
+      success: false,
+
+      error:
+        CONFIG.DEFAULTS.ERROR,
+
+      detail:
+        String(error)
+
+    }, e.parameter.callback);
+  }
+}
+
+
+/* =====================================================
+   CONFIGURATION
+===================================================== */
+
+function getConfig_() {
+
+  const settings =
+    getSettings_();
+
+  return {
+
+    success: true,
+
+    botName:
+      settings.BotName ||
+      CONFIG.DEFAULTS.BOT_NAME,
+
+    welcomeMessage:
+      settings.WelcomeMessage ||
+      CONFIG.DEFAULTS.WELCOME_MESSAGE,
+
+    requireName:
+      parseBoolean_(
+        settings.RequireName,
+        true
+      ),
+
+    requireBRCode:
+      parseBoolean_(
+        settings.RequireBRCode,
+        true
+      )
+  };
+}
+
+
+/* =====================================================
+   BR CODE NORMALIZATION
+===================================================== */
+
+function normalizeBRCode_(value) {
+
+  let code =
+    String(value || '')
+      .trim()
+      .toUpperCase();
+
+  if (!code) {
+    return '';
+  }
+
+  code =
+    code.replace(/\s+/g, '');
+
+  if (code === 'ALL') {
+    return 'BRALL';
+  }
+
+  if (
+    code.indexOf('BR') === 0
+  ) {
+
+    code =
+      code.substring(2);
+  }
+
+  if (
+    !/^\d+$/.test(code)
+  ) {
+
+    return '';
+  }
+
+  if (
+    code.length > 4
+  ) {
+
+    return '';
+  }
+
+  code =
+    code.padStart(4, '0');
+
+  return 'BR' + code;
+}
+
+
+/* =====================================================
+   EXTRACT BR CODE FROM QUESTION
+===================================================== */
+
+function extractBRFromQuestion_(question) {
+  // Look for patterns like "0101", "BR0101", "BR 0101", "101"
+  const patterns = [
+    /BR\s*(\d{2,4})/i,
+    /(\d{4})/,
+    /\b(\d{2,4})\b/
+  ];
+
+  for (let i = 0; i < patterns.length; i++) {
+    const match = question.match(patterns[i]);
+    if (match) {
+      const normalized = normalizeBRCode_(match[1]);
+      if (normalized && normalized !== 'BRALL') {
+        return normalized;
+      }
+    }
+  }
+
+  return null;
+}
+
+
+/* =====================================================
+   GET BRANCH NAME BY CODE
+===================================================== */
+
+function getBranchName_(brCode) {
+  const branch = findBranch_(brCode);
+  return branch ? branch.branchName : null;
+}
+
+
+/* =====================================================
+   VALIDATE BRANCH
+===================================================== */
+
+function validateBranch_(brCode) {
+
+  const normalized =
+    normalizeBRCode_(brCode);
+
+  if (
+    !normalized ||
+    normalized === 'BRALL'
+  ) {
+
+    return {
+
+      success: false,
+
+      valid: false,
+
+      message:
+        CONFIG.DEFAULTS.INVALID_BRANCH
+    };
+  }
+
+  const branch =
+    findBranch_(
+      normalized
+    );
+
+  if (!branch) {
+
+    return {
+
+      success: true,
+
+      valid: false,
+
+      brCode:
+        normalized,
+
+      message:
+        CONFIG.DEFAULTS.INVALID_BRANCH
+    };
+  }
+
+  return {
+
+    success: true,
+
+    valid: true,
+
+    branch:
+      branch
+  };
+}
+
+
+/* =====================================================
+   FIND BRANCH
+===================================================== */
+
+function findBranch_(brCode) {
+
+  const ss =
+    SpreadsheetApp.openById(
+      CONFIG.SPREADSHEET_ID
+    );
+
+  const sheet =
+    ss.getSheetByName(
+      CONFIG.SHEETS.BRANCHES
+    );
+
+  if (!sheet) {
+
+    throw new Error(
+      'Branches sheet not found.'
+    );
+  }
+
+  const values =
+    sheet
+      .getDataRange()
+      .getValues();
+
+  if (
+    values.length < 2
+  ) {
+
+    return null;
+  }
+
+  const branchHeaders =
+    values[0].map(String);
+
+  const index =
+    headerIndexes_(
+      branchHeaders
+    );
+
+  for (
+    let i = 1;
+    i < values.length;
+    i++
+  ) {
+
+    const row =
+      values[i];
+
+    const rowBR =
+      normalizeBRCode_(
+        value_(
+          row,
+          index['BR CODE']
+        )
+      );
+
+    if (
+      rowBR !== brCode
+    ) {
+
+      continue;
+    }
+
+    const status =
+      String(
+        value_(
+          row,
+          index['STATUS']
+        ) ||
+        'Active'
+      )
+      .trim()
+      .toLowerCase();
+
+    if (
+      status !== 'active' &&
+      status !== '1' &&
+      status !== 'yes'
+    ) {
+
+      return null;
+    }
+
+    return {
+
+      brCode:
+        rowBR,
+
+      treasuryCode:
+        value_(
+          row,
+          index['TREASURY CODE']
+        ),
+
+      branchName:
+        value_(
+          row,
+          index['BRANCH NAME']
+        ),
+
+      district:
+        value_(
+          row,
+          index['DISTRICT']
+        ),
+
+      status:
+        value_(
+          row,
+          index['STATUS']
+        )
+    };
+  }
+
+  return null;
+}
+
+
+/* =====================================================
+   ASK QUESTION
+===================================================== */
+
+function askQuestion_(
+  name,
+  brCode,
+  question
+) {
+
+  name =
+    String(name || '')
+      .trim();
+
+  question =
+    String(question || '')
+      .trim();
+
+  const normalizedBR =
+    normalizeBRCode_(
+      brCode
+    );
+
+  if (
+    !normalizedBR ||
+    normalizedBR === 'BRALL'
+  ) {
+
+    return {
+
+      success: false,
+
+      error:
+        'Invalid BR Code.'
+    };
+  }
+
+  if (!question) {
+
+    return {
+
+      success: false,
+
+      error:
+        'Please enter your question.'
+    };
+  }
+
+  /*
+   * Confirm branch exists and is active.
+   */
+  const branch =
+    findBranch_(
+      normalizedBR
+    );
+
+  if (!branch) {
+
+    return {
+
+      success: false,
+
+      error:
+        CONFIG.DEFAULTS.INVALID_BRANCH
+    };
+  }
+
+  // Try to extract branch from question
+  const extractedBR = extractBRFromQuestion_(question);
+  const lookupBR = extractedBR || normalizedBR;
+
+  // Search Knowledge_Base with both the user's branch and any extracted branch
+  const result =
+    searchKnowledgeBase_(
+      question,
+      normalizedBR,
+      lookupBR
+    );
+
+  if (result) {
+
+    // Check if answer came from external source
+    if (result.source === 'External_Sources') {
+      return {
+        success: true,
+        answered: true,
+        answer: result.answer,
+        answerType: result.answerType || 'HTML',
+        source: 'External_Sources',
+        matchType: result.matchType || 'EXTERNAL',
+        lookupBR: result.lookupBR || lookupBR,
+        matchedBy: result.matchedBy || 'External Source',
+        score: result.score,
+        rowNumber: result.rowNumber
+      };
+    }
+
+    return {
+
+      success: true,
+
+      answered: true,
+
+      answer:
+        result.answer,
+
+      answerType:
+        result.answerType || 'TEXT',
+
+      source:
+        result.source || 'Knowledge_Base',
+
+      matchType:
+        result.matchType || 'KEYWORD',
+
+      lookupBR:
+        result.lookupBR || lookupBR,
+
+      matchedBy:
+        result.matchedBy || 'Knowledge Base',
+
+      score:
+        result.score,
+
+      rowNumber:
+        result.rowNumber
+    };
+  }
+
+  // No direct match - try to find suggestions
+  const suggestions = getSuggestions_(question, normalizedBR);
+
+  if (suggestions && suggestions.length > 0) {
+    return {
+      success: true,
+      answered: false,
+      suggestions: suggestions,
+      answer: 'I found some related questions. Please select one.'
+    };
+  }
+
+  /*
+   * Absolutely no meaningful match.
+   * Store in Unanswered_Queries.
+   */
+  const queryId =
+    logUnansweredQuestion_(
+      name,
+      normalizedBR,
+      question
+    );
+
+  return {
+
+    success: true,
+
+    answered: false,
+
+    queryId:
+      queryId,
+
+    answer:
+      CONFIG.DEFAULTS.NO_ANSWER
+  };
+}
+
+
+/* =====================================================
+   GET SUGGESTIONS
+===================================================== */
+
+function getSuggestions_(question, brCode) {
+  const ss =
+    SpreadsheetApp.openById(
+      CONFIG.SPREADSHEET_ID
+    );
+
+  const sheet =
+    ss.getSheetByName(
+      CONFIG.SHEETS.KNOWLEDGE
+    );
+
+  if (!sheet) {
+    return [];
+  }
+
+  const values =
+    sheet
+      .getDataRange()
+      .getValues();
+
+  if (values.length < 2) {
+    return [];
+  }
+
+  const kbHeaders =
+    values[0].map(String);
+
+  const index =
+    headerIndexes_(kbHeaders);
+
+  const normalizedQuestion =
+    normalizeText_(question);
+
+  const questionTokens =
+    tokenize_(question);
+
+  let suggestions = [];
+
+  const maxRows =
+    Math.min(
+      values.length,
+      CONFIG.MAX_KB_ROWS + 1
+    );
+
+  for (
+    let i = 1;
+    i < maxRows;
+    i++
+  ) {
+    const row = values[i];
+
+    // Check status
+    const status =
+      String(
+        value_(
+          row,
+          index['STATUS']
+        )
+      )
+      .trim()
+      .toLowerCase();
+
+    if (
+      status &&
+      status !== 'active' &&
+      status !== '1' &&
+      status !== 'yes'
+    ) {
+      continue;
+    }
+
+    // Check branch
+    const rowBR =
+      normalizeBRCode_(
+        value_(
+          row,
+          index['BR CODE']
+        )
+      );
+
+    const relatedBR =
+      String(
+        value_(
+          row,
+          index['RELATED BR']
+        )
+      ).trim();
+
+    const branchMatch =
+      rowBR === 'BRALL' ||
+      !rowBR ||
+      rowBR === brCode ||
+      relatedBRMatches_(
+        relatedBR,
+        brCode
+      );
+
+    if (!branchMatch) {
+      continue;
+    }
+
+    // Get question text
+    const kbQuestion =
+      String(
+        value_(
+          row,
+          index['QUESTION']
+        )
+      ).trim();
+
+    if (!kbQuestion) {
+      continue;
+    }
+
+    // Check if this question is similar to the user's question
+    const normalizedKBQuestion =
+      normalizeText_(kbQuestion);
+
+    // Check if it's an exact match (skip)
+    if (normalizedQuestion === normalizedKBQuestion) {
+      continue;
+    }
+
+    // Calculate similarity score
+    let score = 0;
+
+    // Check token overlap
+    const kbTokens = tokenize_(kbQuestion);
+    let tokenMatches = 0;
+
+    kbTokens.forEach(function(token) {
+      if (questionTokens.indexOf(token) !== -1) {
+        tokenMatches++;
+      }
+    });
+
+    if (tokenMatches > 0) {
+      const ratio = tokenMatches / Math.max(questionTokens.length, kbTokens.length);
+      score = ratio * 100;
+    }
+
+    // Check keyword matches
+    const keywordText =
+      String(
+        value_(
+          row,
+          index['KEYWORDS']
+        )
+      ).trim();
+
+    if (keywordText) {
+      const keywordList = keywordText
+        .split(/[,;|]/)
+        .map(function(item) { return normalizeText_(item); })
+        .filter(Boolean);
+
+      keywordList.forEach(function(keyword) {
+        if (normalizedQuestion.indexOf(keyword) !== -1) {
+          score += 30;
+        }
+      });
+    }
+
+    // If score is above threshold, add to suggestions
+    if (score >= 20) {
+      suggestions.push({
+        question: kbQuestion,
+        answer: String(
+          value_(
+            row,
+            index['MANUAL ANSWER']
+          )
+        ).trim() || String(
+          value_(
+            row,
+            index['AUTOMATIC ANSWER']
+          )
+        ).trim(),
+        answerType: String(
+          value_(
+            row,
+            index['ANSWER TYPE']
+          )
+        ).trim().toUpperCase(),
+        source: 'Knowledge_Base',
+        score: score,
+        rowNumber: i + 1
+      });
+    }
+  }
+
+  // Sort by score descending and limit to max suggestions
+  suggestions.sort(function(a, b) { return b.score - a.score; });
+  return suggestions.slice(0, CONFIG.MAX_SUGGESTIONS);
+}
+
+
+/* =====================================================
+   KNOWLEDGE BASE SEARCH
+===================================================== */
+
+function searchKnowledgeBase_(
+  question,
+  brCode,
+  lookupBR
+) {
+
+  const ss =
+    SpreadsheetApp.openById(
+      CONFIG.SPREADSHEET_ID
+    );
+
+  const sheet =
+    ss.getSheetByName(
+      CONFIG.SHEETS.KNOWLEDGE
+    );
+
+  if (!sheet) {
+
+    throw new Error(
+      'Knowledge_Base sheet not found.'
+    );
+  }
+
+  const values =
+    sheet
+      .getDataRange()
+      .getValues();
+
+  if (
+    values.length < 2
+  ) {
+
+    return null;
+  }
+
+  const kbHeaders =
+    values[0].map(String);
+
+  const index =
+    headerIndexes_(
+      kbHeaders
+    );
+
+  const normalizedQuestion =
+    normalizeText_(
+      question
+    );
+
+  const questionTokens =
+    tokenize_(
+      question
+    );
+
+  let bestMatch =
+    null;
+
+  const maxRows =
+    Math.min(
+      values.length,
+      CONFIG.MAX_KB_ROWS + 1
+    );
+
+  for (
+    let i = 1;
+    i < maxRows;
+    i++
+  ) {
+
+    const row =
+      values[i];
+
+    /*
+     * -----------------------------------------------
+     * STATUS
+     * -----------------------------------------------
+     */
+
+    const status =
+      String(
+        value_(
+          row,
+          index['STATUS']
+        )
+      )
+      .trim()
+      .toLowerCase();
+
+    if (
+      status &&
+      status !== 'active' &&
+      status !== '1' &&
+      status !== 'yes'
+    ) {
+
+      continue;
+    }
+
+
+    /*
+     * -----------------------------------------------
+     * BRANCH
+     * -----------------------------------------------
+     */
+
+    const rowBR =
+      normalizeBRCode_(
+        value_(
+          row,
+          index['BR CODE']
+        )
+      );
+
+    const relatedBR =
+      String(
+        value_(
+          row,
+          index['RELATED BR']
+        )
+      ).trim();
+
+    // Check both the user's BR and any extracted BR
+    const branchMatch =
+      rowBR === 'BRALL' ||
+      !rowBR ||
+      rowBR === brCode ||
+      (lookupBR && rowBR === lookupBR) ||
+      relatedBRMatches_(
+        relatedBR,
+        brCode
+      ) ||
+      (lookupBR && relatedBRMatches_(relatedBR, lookupBR));
+
+    if (!branchMatch) {
+
+      continue;
+    }
+
+
+    /*
+     * -----------------------------------------------
+     * QUESTION
+     * -----------------------------------------------
+     */
+
+    const kbQuestion =
+      String(
+        value_(
+          row,
+          index['QUESTION']
+        )
+      ).trim();
+
+    const normalizedKBQuestion =
+      normalizeText_(
+        kbQuestion
+      );
+
+
+    /*
+     * -----------------------------------------------
+     * KEYWORDS
+     * -----------------------------------------------
+     */
+
+    const keywordText =
+      String(
+        value_(
+          row,
+          index['KEYWORDS']
+        )
+      ).trim();
+
+
+    if (
+      !normalizedKBQuestion &&
+      !keywordText
+    ) {
+
+      continue;
+    }
+
+
+    /*
+     * -----------------------------------------------
+     * MATCH TYPE
+     * -----------------------------------------------
+     */
+
+    const matchType =
+      String(
+        value_(
+          row,
+          index['MATCH TYPE']
+        )
+      )
+      .trim()
+      .toUpperCase();
+
+
+    /*
+     * -----------------------------------------------
+     * SCORE
+     * -----------------------------------------------
+     */
+
+    let score = 0;
+
+    let meaningfulMatch =
+      false;
+
+    let exactMatch =
+      false;
+
+    let keywordPhraseMatch =
+      false;
+
+    let keywordTokenMatches =
+      0;
+
+    let questionTokenMatches =
+      0;
+
+    let matchTypeUsed = 'KEYWORD';
+
+
+    /*
+     * EXACT QUESTION
+     */
+
+    if (
+      normalizedQuestion &&
+      normalizedKBQuestion &&
+      normalizedQuestion ===
+      normalizedKBQuestion
+    ) {
+
+      score += 1000;
+
+      meaningfulMatch =
+        true;
+
+      exactMatch =
+        true;
+
+      matchTypeUsed = 'EXACT';
+    }
+
+
+    /*
+     * EXACT mode means:
+     * only exact question is accepted.
+     */
+
+    if (
+      matchType === 'EXACT' &&
+      !exactMatch
+    ) {
+
+      continue;
+    }
+
+
+    /*
+     * -----------------------------------------------
+     * KEYWORD PHRASES
+     * -----------------------------------------------
+     */
+
+    if (
+      keywordText &&
+      !exactMatch
+    ) {
+
+      const keywordList =
+        keywordText
+          .split(/[,;|]/)
+          .map(
+            function (item) {
+              return normalizeText_(
+                item
+              );
+            }
+          )
+          .filter(Boolean);
+
+      keywordList.forEach(
+        function (keyword) {
+
+          if (
+            !keyword
+          ) {
+            return;
+          }
+
+          if (
+            normalizedQuestion
+              .indexOf(keyword) !== -1
+          ) {
+
+            score += 40;
+
+            meaningfulMatch =
+              true;
+
+            keywordPhraseMatch =
+              true;
+
+            matchTypeUsed = 'KEYWORD';
+          }
+        }
+      );
+
+
+      /*
+       * -------------------------------------------
+       * INDIVIDUAL KEYWORD TOKENS
+       * -------------------------------------------
+       */
+
+      const keywordTokens =
+        tokenize_(
+          keywordText
+        );
+
+      keywordTokens.forEach(
+        function (token) {
+
+          if (
+            questionTokens
+              .indexOf(token) !== -1
+          ) {
+
+            score += 10;
+
+            keywordTokenMatches++;
+
+            meaningfulMatch =
+              true;
+
+            if (matchTypeUsed !== 'EXACT') {
+              matchTypeUsed = 'KEYWORD';
+            }
+          }
+        }
+      );
+    }
+
+
+    /*
+     * -----------------------------------------------
+     * KB QUESTION TOKEN MATCHING
+     * -----------------------------------------------
+     */
+
+    if (
+      normalizedKBQuestion &&
+      !exactMatch
+    ) {
+
+      const kbQuestionTokens =
+        tokenize_(
+          kbQuestion
+        );
+
+      kbQuestionTokens.forEach(
+        function (token) {
+
+          if (
+            questionTokens
+              .indexOf(token) !== -1
+          ) {
+
+            score += 3;
+
+            questionTokenMatches++;
+          }
+        }
+      );
+
+      if (
+        questionTokenMatches >= 2
+      ) {
+
+        meaningfulMatch =
+          true;
+      }
+    }
+
+
+    /*
+     * -----------------------------------------------
+     * If the only possible match is one question
+     * token, do NOT accept it.
+     * -----------------------------------------------
+     */
+
+    if (
+      !exactMatch &&
+      !keywordPhraseMatch &&
+      keywordTokenMatches === 0 &&
+      questionTokenMatches < 2
+    ) {
+
+      continue;
+    }
+
+
+    /*
+     * -----------------------------------------------
+     * BRANCH BONUS
+     * -----------------------------------------------
+     */
+
+    if (
+      meaningfulMatch &&
+      rowBR === brCode
+    ) {
+
+      score += 50;
+    }
+
+
+    /*
+     * -----------------------------------------------
+     * PRIORITY
+     * -----------------------------------------------
+     */
+
+    const priority =
+      Number(
+        value_(
+          row,
+          index['PRIORITY']
+        )
+      ) || 0;
+
+    if (meaningfulMatch) {
+
+      score += priority;
+    }
+
+
+    /*
+     * -----------------------------------------------
+     * FINAL MATCH VALIDATION
+     * -----------------------------------------------
+     */
+
+    if (
+      !meaningfulMatch ||
+      score < CONFIG.MIN_MATCH_SCORE
+    ) {
+
+      continue;
+    }
+
+
+    /*
+     * -----------------------------------------------
+     * GET ANSWER
+     * -----------------------------------------------
+     */
+
+    let answer =
+      String(
+        value_(
+          row,
+          index['MANUAL ANSWER']
+        )
+      ).trim();
+
+    let answerType =
+      String(
+        value_(
+          row,
+          index['ANSWER TYPE']
+        )
+      )
+      .trim()
+      .toUpperCase();
+
+    let source =
+      'Knowledge_Base';
+
+    let matchedBy = 'Knowledge Base';
+
+
+    /*
+     * -----------------------------------------------
+     * MANUAL ANSWER HAS PRIORITY
+     * -----------------------------------------------
+     */
+
+    if (!answer) {
+
+      answer =
+        String(
+          value_(
+            row,
+            index['AUTOMATIC ANSWER']
+          )
+        ).trim();
+    }
+
+
+    /*
+     * -----------------------------------------------
+     * EXTERNAL SOURCE
+     * -----------------------------------------------
+     */
+
+    const externalSourceId =
+      String(
+        value_(
+          row,
+          index['EXTERNAL SOURCE ID']
+        )
+      ).trim();
+
+    if (
+      answerType === 'EXTERNAL' &&
+      externalSourceId
+    ) {
+
+      // Determine which BR to use for external lookup
+      const externalLookupBR = lookupBR || brCode;
+
+      const externalAnswer =
+        getExternalAnswer_(
+          externalSourceId,
+          externalLookupBR,
+          question,
+          brCode
+        );
+
+      if (externalAnswer) {
+
+        answer =
+          externalAnswer.answer;
+
+        answerType =
+          externalAnswer.answerType;
+
+        source =
+          'External_Sources';
+
+        matchTypeUsed = 'EXTERNAL';
+        
+        matchedBy = externalAnswer.matchedBy || 'External Source';
+
+        return {
+          answer: answer,
+          answerType: answerType || 'HTML',
+          source: source,
+          matchType: matchTypeUsed,
+          lookupBR: externalAnswer.lookupBR || externalLookupBR,
+          matchedBy: matchedBy,
+          score: score,
+          rowNumber: i + 1
+        };
+      }
+    }
+
+
+    /*
+     * No actual answer.
+     */
+    if (!answer) {
+
+      continue;
+    }
+
+
+    /*
+     * -----------------------------------------------
+     * BEST MATCH
+     * -----------------------------------------------
+     */
+
+    if (
+      !bestMatch ||
+      score > bestMatch.score
+    ) {
+
+      bestMatch = {
+
+        answer:
+          answer,
+
+        answerType:
+          answerType || 'TEXT',
+
+        source:
+          source,
+
+        matchType:
+          matchTypeUsed,
+
+        lookupBR:
+          lookupBR || brCode,
+
+        matchedBy:
+          matchedBy,
+
+        score:
+          score,
+
+        rowNumber:
+          i + 1
+      };
+    }
+  }
+
+  return bestMatch;
+}
+
+
+/* =====================================================
+   EXTERNAL SOURCE
+===================================================== */
+
+function getExternalAnswer_(
+  sourceId,
+  lookupBR,
+  question,
+  userBR
+) {
+
+  const ss =
+    SpreadsheetApp.openById(
+      CONFIG.SPREADSHEET_ID
+    );
+
+  const configSheet =
+    ss.getSheetByName(
+      CONFIG.SHEETS.EXTERNAL
+    );
+
+  if (!configSheet) {
+    return null;
+  }
+
+  const values =
+    configSheet
+      .getDataRange()
+      .getValues();
+
+  if (
+    values.length < 2
+  ) {
+    return null;
+  }
+
+  const externalHeaders =
+    values[0].map(String);
+
+  const index =
+    headerIndexes_(
+      externalHeaders
+    );
+
+  let config =
+    null;
+
+  for (
+    let i = 1;
+    i < values.length;
+    i++
+  ) {
+
+    const row =
+      values[i];
+
+    const id =
+      String(
+        value_(
+          row,
+          index['SOURCE ID']
+        )
+      ).trim();
+
+    if (
+      id !== sourceId
+    ) {
+
+      continue;
+    }
+
+    const status =
+      String(
+        value_(
+          row,
+          index['STATUS']
+        )
+      )
+      .trim()
+      .toLowerCase();
+
+    if (
+      status &&
+      status !== 'active' &&
+      status !== '1' &&
+      status !== 'yes'
+    ) {
+
+      return null;
+    }
+
+    config = {
+
+      sheetUrl:
+        String(
+          value_(
+            row,
+            index['SHEET URL']
+          )
+        ).trim(),
+
+      sheetName:
+        String(
+          value_(
+            row,
+            index['SHEET NAME']
+          )
+        ).trim(),
+
+      referenceColumns:
+        String(
+          value_(
+            row,
+            index['REFERENCE COLUMNS']
+          )
+        ).trim(),
+
+      answerColumns:
+        String(
+          value_(
+            row,
+            index['ANSWER COLUMNS']
+          )
+        ).trim(),
+      
+      lookupMode:
+        String(
+          value_(
+            row,
+            index['LOOKUP MODE']
+          )
+        ).trim().toUpperCase(),
+      
+      lookupValue:
+        String(
+          value_(
+            row,
+            index['LOOKUP VALUE']
+          )
+        ).trim()
+    };
+
+    break;
+  }
+
+  if (!config) {
+    return null;
+  }
+
+  if (
+    !config.sheetUrl ||
+    !config.sheetName ||
+    !config.referenceColumns ||
+    !config.answerColumns
+  ) {
+
+    return null;
+  }
+
+
+  /*
+   * Open external spreadsheet.
+   */
+
+  let externalSS;
+
+  try {
+
+    externalSS =
+      SpreadsheetApp.openByUrl(
+        config.sheetUrl
+      );
+
+  } catch (error1) {
+
+    try {
+
+      externalSS =
+        SpreadsheetApp.openById(
+          config.sheetUrl
+        );
+
+    } catch (error2) {
+
+      return null;
+    }
+  }
+
+
+  const sheet =
+    externalSS.getSheetByName(
+      config.sheetName
+    );
+
+  if (!sheet) {
+    return null;
+  }
+
+
+  const data =
+    sheet
+      .getDataRange()
+      .getDisplayValues();
+
+  if (
+    data.length < 2
+  ) {
+
+    return null;
+  }
+
+
+  const referenceColumns =
+    parseColumns_(
+      config.referenceColumns
+    );
+
+  const answerColumns =
+    parseColumns_(
+      config.answerColumns
+    );
+
+  if (
+    !referenceColumns.length ||
+    !answerColumns.length
+  ) {
+
+    return null;
+  }
+
+
+  const referenceIndexes =
+    referenceColumns.map(
+      columnToIndex_
+    );
+
+  const answerIndexes =
+    answerColumns.map(
+      columnToIndex_
+    );
+
+
+  const sourceHeaders =
+    data[0];
+
+  const lookupMode = config.lookupMode || 'EXACT';
+  const configuredLookupValue = config.lookupValue;
+  
+  // Build lookup values based on the configured lookup value type
+  let lookupValues = [];
+  
+  // Check what type of lookup this is
+  const isKeywordLookup = configuredLookupValue && 
+    (configuredLookupValue.toUpperCase() === 'MATCHED KEY WORDS' || 
+     configuredLookupValue.toUpperCase() === 'KEYWORDS' ||
+     configuredLookupValue.toUpperCase() === 'KEYWORD' ||
+     configuredLookupValue.toUpperCase() === 'MATCHED_KEY_WORDS');
+  
+  const isBranchLookup = configuredLookupValue && 
+    (configuredLookupValue.toUpperCase() === 'BRANCH ID' || 
+     configuredLookupValue.toUpperCase() === 'BR CODE' ||
+     configuredLookupValue.toUpperCase() === 'BRANCH' ||
+     configuredLookupValue.toUpperCase() === 'BRANCH_ID');
+  
+  // Determine which lookup strategy to use
+  const useKeywordSearch = lookupMode === 'KEYWORD' || 
+    (lookupMode === 'BOTH' && isKeywordLookup);
+  
+  const useBranchSearch = lookupMode === 'BRANCH' || 
+    (lookupMode === 'MULTI') ||
+    (lookupMode === 'BOTH' && isBranchLookup);
+  
+  // For EXACT mode
+  if (lookupMode === 'EXACT') {
+    if (configuredLookupValue && !isKeywordLookup && !isBranchLookup) {
+      lookupValues.push(configuredLookupValue);
+    }
+    lookupValues.push(question);
+  }
+  
+  // For BRANCH/MULTI/BOTH modes
+  if (useBranchSearch || lookupMode === 'BOTH' || lookupMode === 'MULTI') {
+    
+    // 1. Extract BR code from question
+    const extractedBR = extractBRFromQuestion_(question);
+    if (extractedBR) {
+      lookupValues.push(extractedBR);
+    }
+    
+    // 2. Extract any 3-4 digit number from question
+    const numberMatches = question.match(/\b(\d{3,4})\b/g);
+    if (numberMatches) {
+      numberMatches.forEach(function(num) {
+        const normalized = normalizeBRCode_(num);
+        if (normalized && normalized !== 'BRALL' && lookupValues.indexOf(normalized) === -1) {
+          lookupValues.push(normalized);
+        }
+        if (lookupValues.indexOf(num) === -1) {
+          lookupValues.push(num);
+        }
+      });
+    }
+    
+    // 3. Extract branch names/keywords from question
+    const stopWords = ['the', 'of', 'for', 'to', 'in', 'on', 'at', 'by', 'with', 'without', 'and', 'or', 'but', 'from', 'up', 'down', 'off', 'over', 'under', 'gateway', 'ip', 'address', 'what', 'is', 'are', 'was', 'were', 'am', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'please', 'tell', 'me', 'my', 'your', 'our', 'their', 'treasury', 'sub', 'branch'];
+    
+    const words = question.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(' ');
+    const meaningfulWords = words.filter(function(w) {
+      return w.length >= 3 && stopWords.indexOf(w) === -1;
+    });
+    
+    meaningfulWords.forEach(function(word) {
+      if (lookupValues.indexOf(word) === -1) {
+        lookupValues.push(word);
+      }
+    });
+    
+    // 4. Always add user's BR code as fallback
+    if (userBR && lookupValues.indexOf(userBR) === -1) {
+      lookupValues.push(userBR);
+    }
+    
+    // 5. Add lookupBR if provided
+    if (lookupBR && lookupValues.indexOf(lookupBR) === -1) {
+      lookupValues.push(lookupBR);
+    }
+  }
+  
+  // For KEYWORD mode
+  if (useKeywordSearch || lookupMode === 'KEYWORD') {
+    if (configuredLookupValue && isKeywordLookup) {
+      const keywords = configuredLookupValue
+        .split(/[,;|\s]+/)
+        .map(function(k) { return k.trim().toLowerCase(); })
+        .filter(Boolean);
+      lookupValues = lookupValues.concat(keywords);
+    }
+    
+    // Extract meaningful words from question
+    const stopWords = ['the', 'of', 'for', 'to', 'in', 'on', 'at', 'by', 'with', 'without', 'and', 'or', 'but', 'from', 'up', 'down', 'off', 'over', 'under', 'gateway', 'ip', 'address', 'what', 'is', 'are', 'was', 'were', 'am', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'please', 'tell', 'me', 'my', 'your', 'our', 'their', 'treasury', 'sub', 'branch'];
+    const words = question.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(' ');
+    const meaningfulWords = words.filter(function(w) {
+      return w.length >= 3 && stopWords.indexOf(w) === -1;
+    });
+    lookupValues = lookupValues.concat(meaningfulWords);
+  }
+  
+  // Remove duplicates and empty values
+  lookupValues = lookupValues.filter(function(v, i, self) {
+    return v && self.indexOf(v) === i;
+  });
+
+  /*
+   * Search external sheet.
+   */
+
+  for (
+    let r = 1;
+    r < data.length;
+    r++
+  ) {
+
+    const row =
+      data[r];
+
+    let matched =
+      false;
+    let matchedValue = null;
+    let matchedBy = '';
+
+    /*
+     * Check reference columns.
+     */
+
+    for (
+      let c = 0;
+      c < referenceIndexes.length;
+      c++
+    ) {
+
+      const cell =
+        String(
+          row[
+            referenceIndexes[c]
+          ] || ''
+        ).trim();
+
+      if (!cell) {
+        continue;
+      }
+
+      const normalizedCell =
+        normalizeBRCode_(cell);
+      
+      const cellUpper = cell.toUpperCase();
+      const cellLower = cell.toLowerCase();
+
+      // Check against all lookup values
+      for (let v = 0; v < lookupValues.length; v++) {
+        const lookupVal = lookupValues[v];
+        
+        if (!lookupVal) continue;
+        
+        const lookupStr = String(lookupVal).toUpperCase();
+        const lookupLower = lookupVal.toLowerCase();
+        
+        // 1. Try exact match (BR code or exact text)
+        if (cellUpper === lookupStr) {
+          matched = true;
+          matchedValue = lookupVal;
+          matchedBy = 'Exact Match: ' + lookupVal;
+          break;
+        }
+        
+        // 2. Try normalized BR comparison
+        if (normalizedCell && normalizedCell === lookupVal) {
+          matched = true;
+          matchedValue = lookupVal;
+          matchedBy = 'BR Code Match: ' + lookupVal;
+          break;
+        }
+        
+        // 3. Try case-insensitive contains (for keyword/name matching)
+        if (cellLower.indexOf(lookupLower) !== -1) {
+          matched = true;
+          matchedValue = lookupVal;
+          matchedBy = 'Keyword Match: "' + lookupVal + '"';
+          break;
+        }
+        
+        // 4. Try matching the lookup value within the cell (for treasury names)
+        if (useKeywordSearch || lookupMode === 'BOTH') {
+          const cellWords = cellLower.split(/[\s\-]+/);
+          for (let w = 0; w < cellWords.length; w++) {
+            if (cellWords[w].indexOf(lookupLower) !== -1 || lookupLower.indexOf(cellWords[w]) !== -1) {
+              if (cellWords[w].length >= 3) {
+                matched = true;
+                matchedValue = lookupVal;
+                matchedBy = 'Keyword Match: "' + lookupVal + '"';
+                break;
+              }
+            }
+          }
+          if (matched) break;
+        }
+        
+        // 5. Try matching treasury code numbers
+        const cellNumbers = cell.match(/\b(\d{3,4})\b/g);
+        if (cellNumbers) {
+          for (let n = 0; n < cellNumbers.length; n++) {
+            const normalizedNum = normalizeBRCode_(cellNumbers[n]);
+            if (cellNumbers[n] === lookupVal || normalizedNum === lookupVal || normalizedNum === lookupStr) {
+              matched = true;
+              matchedValue = lookupVal;
+              matchedBy = 'Treasury Code Match: ' + lookupVal;
+              break;
+            }
+          }
+          if (matched) break;
+        }
+        
+        // 6. Try matching partial words in the cell
+        if (!matched && lookupLower.length >= 3) {
+          const cellWords = cellLower.split(/[\s\-]+/);
+          for (let w = 0; w < cellWords.length; w++) {
+            if (cellWords[w].length >= 3 && cellWords[w].indexOf(lookupLower) !== -1) {
+              matched = true;
+              matchedValue = lookupVal;
+              matchedBy = 'Partial Match: "' + lookupVal + '"';
+              break;
+            }
+            if (cellWords[w].length >= 3 && lookupLower.indexOf(cellWords[w]) !== -1) {
+              matched = true;
+              matchedValue = lookupVal;
+              matchedBy = 'Partial Match: "' + lookupVal + '"';
+              break;
+            }
+          }
+          if (matched) break;
+        }
+      }
+
+      if (matched) {
+        break;
+      }
+    }
+
+
+    if (!matched) {
+      continue;
+    }
+
+
+    /*
+     * Build answer.
+     */
+
+    const resultParts =
+      [];
+
+    answerIndexes.forEach(
+      function (columnIndex) {
+
+        if (
+          columnIndex < 0 ||
+          columnIndex >= row.length
+        ) {
+
+          return;
+        }
+
+        const value =
+          String(
+            row[columnIndex] || ''
+          ).trim();
+
+        if (!value) {
+          return;
+        }
+
+        const heading =
+          sourceHeaders[columnIndex] ||
+          'Answer';
+
+
+        resultParts.push(
+
+          '<strong>' +
+          escapeHtml_(
+            heading
+          ) +
+          ':</strong> ' +
+          escapeHtml_(
+            value
+          )
+        );
+      }
+    );
+
+
+    if (
+      !resultParts.length
+    ) {
+
+      return null;
+    }
+
+
+    return {
+      answer:
+        resultParts.join(
+          '<br>'
+        ),
+      answerType:
+        'HTML',
+      lookupBR: matchedValue || lookupBR || userBR,
+      matchedBy: matchedBy
+    };
+  }
+
+  return null;
+}
+
+
+/* =====================================================
+   UNANSWERED QUESTIONS
+===================================================== */
+
+function logUnansweredQuestion_(
+  name,
+  brCode,
+  question
+) {
+
+  const ss =
+    SpreadsheetApp.openById(
+      CONFIG.SPREADSHEET_ID
+    );
+
+  let sheet =
+    ss.getSheetByName(
+      CONFIG.SHEETS.UNANSWERED
+    );
+
+
+  /*
+   * Create sheet automatically.
+   */
+
+  if (!sheet) {
+
+    sheet =
+      ss.insertSheet(
+        CONFIG.SHEETS.UNANSWERED
+      );
+
+    sheet.appendRow([
+
+      'Query ID',
+      'Date/Time',
+      'Name',
+      'BR Code',
+      'Question',
+      'Status',
+      'Admin Answer',
+      'Save As',
+      'KB ID',
+      'External Source ID',
+      'Admin',
+      'Updated'
+    ]);
+
+    /*
+     * Freeze header.
+     */
+    sheet.setFrozenRows(1);
+  }
+
+
+  /*
+   * Prevent duplicate pending queries.
+   */
+
+  const existingQueryId =
+    findPendingQuery_(
+      sheet,
+      brCode,
+      question
+    );
+
+  if (existingQueryId) {
+
+    return existingQueryId;
+  }
+
+
+  /*
+   * Generate new query ID.
+   */
+
+  const queryId =
+    generateQueryId_();
+
+
+  /*
+   * Add query.
+   */
+
+  const lock =
+    LockService.getScriptLock();
+
+  try {
+
+    lock.waitLock(
+      10000
+    );
+
+    sheet.appendRow([
+
+      queryId,
+
+      new Date(),
+
+      name,
+
+      brCode,
+
+      question,
+
+      'Pending',
+
+      '',
+
+      '',
+
+      '',
+
+      '',
+
+      '',
+
+      ''
+    ]);
+
+  } finally {
+
+    try {
+      lock.releaseLock();
+    } catch (ignore) {}
+  }
+
+
+  return queryId;
+}
+
+
+/* =====================================================
+   FIND EXISTING PENDING QUERY
+===================================================== */
+
+function findPendingQuery_(
+  sheet,
+  brCode,
+  question
+) {
+
+  const lastRow =
+    sheet.getLastRow();
+
+  if (
+    lastRow < 2
+  ) {
+
+    return '';
+  }
+
+
+  const lastColumn =
+    Math.max(
+      sheet.getLastColumn(),
+      6
+    );
+
+
+  const data =
+    sheet
+      .getRange(
+        2,
+        1,
+        lastRow - 1,
+        lastColumn
+      )
+      .getValues();
+
+
+  const normalizedQuestion =
+    normalizeText_(
+      question
+    );
+
+
+  for (
+    let i = 0;
+    i < data.length;
+    i++
+  ) {
+
+    const row =
+      data[i];
+
+    const rowBR =
+      normalizeBRCode_(
+        row[3]
+      );
+
+    const rowQuestion =
+      normalizeText_(
+        row[4]
+      );
+
+    const status =
+      String(
+        row[5] || ''
+      )
+      .trim()
+      .toLowerCase();
+
+
+    if (
+      rowBR === brCode &&
+      rowQuestion ===
+        normalizedQuestion &&
+      status === 'pending'
+    ) {
+
+      return String(
+        row[0] || ''
+      );
+    }
+  }
+
+  return '';
+}
+
+
+/* =====================================================
+   QUERY ID
+===================================================== */
+
+function generateQueryId_() {
+
+  const ss =
+    SpreadsheetApp.openById(
+      CONFIG.SPREADSHEET_ID
+    );
+
+  const sheet =
+    ss.getSheetByName(
+      CONFIG.SHEETS.UNANSWERED
+    );
+
+  if (!sheet) {
+    return 'Q00001';
+  }
+
+  const lastRow =
+    sheet.getLastRow();
+
+  if (
+    lastRow < 2
+  ) {
+
+    return 'Q00001';
+  }
+
+
+  const values =
+    sheet
+      .getRange(
+        2,
+        1,
+        lastRow - 1,
+        1
+      )
+      .getValues();
+
+
+  let max =
+    0;
+
+
+  values.forEach(
+    function (row) {
+
+      const match =
+        String(
+          row[0]
+        )
+        .match(
+          /^Q(\d+)$/i
+        );
+
+      if (match) {
+
+        max =
+          Math.max(
+            max,
+            Number(
+              match[1]
+            )
+          );
+      }
+    }
+  );
+
+
+  return (
+    'Q' +
+    String(
+      max + 1
+    ).padStart(
+      5,
+      '0'
+    )
+  );
+}
+
+
+/* =====================================================
+   TEXT NORMALIZATION
+===================================================== */
+
+function normalizeText_(text) {
+
+  return String(
+    text || ''
+  )
+  .toLowerCase()
+  .replace(
+    /[^\w\s]/g,
+    ' '
+  )
+  .replace(
+    /\s+/g,
+    ' '
+  )
+  .trim();
+}
+
+
+/* =====================================================
+   TOKENIZATION
+===================================================== */
+
+function tokenize_(text) {
+
+  const stopWords = {
+
+    a: true,
+    an: true,
+    the: true,
+    is: true,
+    are: true,
+    was: true,
+    were: true,
+    am: true,
+    be: true,
+    to: true,
+    of: true,
+    in: true,
+    on: true,
+    for: true,
+    and: true,
+    or: true,
+    at: true,
+    by: true,
+    from: true,
+    with: true,
+    this: true,
+    that: true,
+    it: true,
+    my: true,
+    your: true,
+    our: true,
+    their: true,
+    i: true,
+    you: true,
+    we: true,
+    they: true,
+    me: true,
+    can: true,
+    could: true,
+    would: true,
+    should: true,
+    please: true,
+    tell: true,
+    give: true,
+    what: true,
+    which: true,
+    where: true,
+    when: true,
+    why: true,
+    how: true,
+    do: true,
+    does: true,
+    did: true
+  };
+
+
+  return normalizeText_(
+    text
+  )
+  .split(' ')
+  .filter(
+    function (word) {
+
+      return (
+        word.length >= 2 &&
+        !stopWords[word]
+      );
+    }
+  );
+}
+
+
+/* =====================================================
+   RELATED BRANCH
+===================================================== */
+
+function relatedBRMatches_(
+  value,
+  brCode
+) {
+
+  if (!value) {
+    return false;
+  }
+
+
+  const list =
+    String(value)
+      .split(
+        /[,;|\s]+/
+      )
+      .map(
+        function (item) {
+
+          return normalizeBRCode_(
+            item
+          );
+        }
+      )
+      .filter(Boolean);
+
+
+  return (
+    list.indexOf(
+      brCode
+    ) !== -1
+  );
+}
+
+
+/* =====================================================
+   COLUMN PARSER
+===================================================== */
+
+function parseColumns_(value) {
+
+  return String(
+    value || ''
+  )
+  .split(
+    /[,;|\s]+/
+  )
+  .map(
+    function (item) {
+
+      return item
+        .trim()
+        .toUpperCase();
+    }
+  )
+  .filter(Boolean);
+}
+
+
+/* =====================================================
+   COLUMN LETTER → INDEX
+===================================================== */
+
+function columnToIndex_(
+  column
+) {
+
+  column =
+    String(
+      column || ''
+    )
+    .trim()
+    .toUpperCase();
+
+
+  if (
+    !/^[A-Z]+$/.test(
+      column
+    )
+  ) {
+
+    return -1;
+  }
+
+
+  let result =
+    0;
+
+
+  for (
+    let i = 0;
+    i < column.length;
+    i++
+  ) {
+
+    result =
+      result * 26 +
+      (
+        column.charCodeAt(i) -
+        64
+      );
+  }
+
+
+  return result - 1;
+}
+
+
+/* =====================================================
+   HEADER INDEXES
+===================================================== */
+
+function headerIndexes_(
+  headers
+) {
+
+  const result =
+    {};
+
+
+  headers.forEach(
+    function (
+      header,
+      index
+    ) {
+
+      result[
+        String(
+          header
+        )
+        .trim()
+        .toUpperCase()
+      ] =
+        index;
+    }
+  );
+
+
+  return result;
+}
+
+
+/* =====================================================
+   SAFE ROW VALUE
+===================================================== */
+
+function value_(
+  row,
+  index
+) {
+
+  if (
+    index === undefined ||
+    index === null ||
+    index < 0
+  ) {
+
+    return '';
+  }
+
+
+  return (
+    row[index] === undefined
+      ? ''
+      : row[index]
+  );
+}
+
+
+/* =====================================================
+   SETTINGS
+===================================================== */
+
+function getSettings_() {
+
+  const ss =
+    SpreadsheetApp.openById(
+      CONFIG.SPREADSHEET_ID
+    );
+
+  const sheet =
+    ss.getSheetByName(
+      CONFIG.SHEETS.SETTINGS
+    );
+
+  if (!sheet) {
+    return {};
+  }
+
+
+  const values =
+    sheet
+      .getDataRange()
+      .getValues();
+
+
+  const settings =
+    {};
+
+
+  for (
+    let i = 1;
+    i < values.length;
+    i++
+  ) {
+
+    const key =
+      String(
+        values[i][0] || ''
+      ).trim();
+
+
+    if (!key) {
+      continue;
+    }
+
+
+    settings[key] =
+      values[i][1];
+  }
+
+
+  return settings;
+}
+
+
+/* =====================================================
+   BOOLEAN
+===================================================== */
+
+function parseBoolean_(
+  value,
+  defaultValue
+) {
+
+  if (
+    value === undefined ||
+    value === null ||
+    value === ''
+  ) {
+
+    return defaultValue;
+  }
+
+
+  const normalized =
+    String(value)
+      .trim()
+      .toLowerCase();
+
+
+  return (
+    normalized === 'true' ||
+    normalized === 'yes' ||
+    normalized === '1'
+  );
+}
+
+
+/* =====================================================
+   HTML ESCAPE
+===================================================== */
+
+function escapeHtml_(
+  value
+) {
+
+  return String(
+    value || ''
+  )
+  .replace(
+    /&/g,
+    '&amp;'
+  )
+  .replace(
+    /</g,
+    '&lt;'
+  )
+  .replace(
+    />/g,
+    '&gt;'
+  )
+  .replace(
+    /"/g,
+    '&quot;'
+  )
+  .replace(
+    /'/g,
+    '&#039;'
+  );
+}
+
+
+/* =====================================================
+   JSON / JSONP
+===================================================== */
+
+function jsonResponse_(
+  data,
+  callback
+) {
+
+  const json =
+    JSON.stringify(
+      data
+    );
+
+
+  if (
+    callback &&
+    /^[a-zA-Z_$][0-9a-zA-Z_$\.]*$/
+      .test(callback)
+  ) {
+
+    return ContentService
+      .createTextOutput(
+        callback +
+        '(' +
+        json +
+        ');'
+      )
+      .setMimeType(
+        ContentService.MimeType.JAVASCRIPT
+      );
+  }
+
+
+  return ContentService
+    .createTextOutput(
+      json
+    )
+    .setMimeType(
+      ContentService.MimeType.JSON
+    );
+}
