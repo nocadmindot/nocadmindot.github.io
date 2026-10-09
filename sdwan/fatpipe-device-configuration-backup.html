@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FatPipe Device Configuration Backup</title>
+    
+    <!-- LOCAL CSS -->
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="../css/buttons.bootstrap5.min.css">
+    <link rel="stylesheet" href="../css/all-in-one.css">
+   
+</head>
+<body>
+<div class="page-header">
+                <div class="page-header-left">
+                   <i class="bi bi-hdd-network-fill"></i>
+                    <div>
+                        <h1>FatPipe Device Configuration Backup</h1>
+                        <p>Download FatPipe device configuration backups for treasuries and branches.</p>
+                    </div>
+                </div>
+      <div class="export-buttons">
+            
+            <a class="export-btn csv" id="" href="https://forms.gle/YL99wHTCrcLzQXrw7" target="_blank">
+                <i class="bi bi-file-earmark-spreadsheet"></i> Open Form
+            </a>
+        </div>
+            </div>
+
+<div class="main-wrapper">
+    <!-- Header with Export Buttons at Right End -->
+
+
+    <!-- Main Card -->
+    <div class="">
+        <div class="card-body">
+            <!-- Table -->
+            <div class="table-responsive">
+                <table id="treasuryNetworkTable" class="table table-hover" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>Treasury/Branch</th>
+                            <th>Device Type</th>
+                            <th>Backup ZIP</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="3" class="text-center py-4">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2 text-muted">Loading FatPipe backup data...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Export Toast Message -->
+    <div id="exportToast" class="export-toast" style="display:none">
+        <i class="bi bi-check-circle-fill"></i>
+        <span>Export completed!</span>
+    </div>
+</div>
+
+<!-- LOCAL SCRIPTS -->
+<script src="../js/jquery.min.js"></script>
+<script src="../js/bootstrap.bundle.min.js"></script>
+<script src="../js/jquery.dataTables.min.js"></script>
+<script src="../js/dataTables.bootstrap5.min.js"></script>
+<script src="../js/dataTables.buttons.min.js"></script>
+<script src="../js/buttons.bootstrap5.min.js"></script>
+<script src="../js/jszip.min.js"></script>
+<script src="../js/pdfmake.min.js"></script>
+<script src="../js/vfs_fonts.js"></script>
+<script src="../js/buttons.html5.min.js"></script>
+<script src="../js/buttons.print.min.js"></script>
+
+<script>
+(function() {
+    const API_KEY = 'AIzaSyBB1V3vJpNZ9X1GIF-YOwoa6YSt_iXMLo0';
+    const SPREADSHEET_ID = '16ADBnxUOA6Gghl44mLqWmuJz-GvjoxdxVAdsHQqxl20';
+    const SHEET_NAME = 'Form Responses 1';
+    const RANGE = 'B2:D';
+
+    let dataTable = null;
+
+    function loadTreasuryData() {
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(SHEET_NAME)}!${RANGE}?valueRenderOption=FORMULA&key=${API_KEY}`;
+        
+        $('#treasuryNetworkTable tbody').html(`
+            <tr><td colspan="3" class="text-center py-4"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div><p class="mt-2 text-muted">Loading FatPipe backup data...</p></td>
+        `);
+        
+        // Also request cell hyperlink metadata. This supports both HYPERLINK formulas
+        // and cells where the link is attached to the displayed text "Backup available".
+        const gridUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}?includeGridData=true&ranges=${encodeURIComponent("'" + SHEET_NAME + "'!B2:D")}&fields=${encodeURIComponent('sheets(data(rowData(values(formattedValue,hyperlink,userEnteredValue))))')}&key=${API_KEY}`;
+
+        Promise.all([
+            fetch(url).then(res => res.json()),
+            fetch(gridUrl).then(res => res.json())
+        ])
+            .then(([data, gridData]) => {
+                if (data.error) throw new Error(data.error.message);
+                if (gridData.error) console.warn('Could not read hyperlink metadata:', gridData.error.message);
+
+                const rows = data.values || [];
+                const gridRows = gridData.sheets?.[0]?.data?.[0]?.rowData || [];
+                rows.forEach((row, index) => {
+                    const backupCell = gridRows[index]?.values?.[2];
+                    const hyperlink = backupCell?.hyperlink;
+                    const entered = backupCell?.userEnteredValue;
+                    if (hyperlink) row[2] = hyperlink;
+                    else if (entered?.formulaValue) row[2] = entered.formulaValue;
+                });
+                renderTable(rows);
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                $('#treasuryNetworkTable tbody').html(`
+                    <tr><td colspan="3" class="text-center py-4 text-danger">Failed to load data. Please check connection.</td></tr>
+                `);
+            });
+    }
+
+    function renderTable(rows) {
+        if (!rows || rows.length === 0) {
+            $('#treasuryNetworkTable tbody').html(`<tr><td colspan="3" class="text-center py-4">No records found</td></tr>`);
+            return;
+        }
+
+        const tableData = rows.map(row => [
+            (row[0] || '—').toString().trim(),
+            (row[1] || '—').toString().trim(),
+            (row[2] || '').toString().trim()
+        ]);
+
+        if (dataTable) {
+            dataTable.destroy();
+            dataTable = null;
+        }
+
+        // Keep the actual Drive URL/formula in the row data, but render a download button.
+        dataTable = $('#treasuryNetworkTable').DataTable({
+            data: tableData,
+            columns: [
+                { title: 'Treasury/Branch', render: $.fn.dataTable.render.text() },
+                { title: 'Device Type', render: $.fn.dataTable.render.text() },
+                {
+                    title: 'Backup ZIP',
+                    orderable: false,
+                    searchable: false,
+                    render: function(value, type) {
+                        const backupLink = getDriveFileUrl(value);
+                        if (type !== 'display') return backupLink ? 'Backup available' : 'Not available';
+                        return backupLink
+                            ? `<a class="export-btn excel" href="${escapeHtml(backupLink)}" target="_blank" rel="noopener noreferrer"><i class="bi bi-download"></i> Download ZIP</a>`
+                            : '<span class="empty-cell">Not available</span>';
+                    }
+                }
+            ],
+            paging: true,
+            pageLength: 25,
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, 'All']],
+            ordering: true,
+            scrollX: true,
+            autoWidth: false,
+            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rtip',
+            buttons: [
+                { extend: 'excelHtml5', text: 'Excel', className: 'btn-excel-hidden', title: 'FatPipe_Device_Configuration_Backup' },
+                { extend: 'pdfHtml5', text: 'PDF', className: 'btn-pdf-hidden', title: 'FatPipe_Device_Configuration_Backup', orientation: 'landscape', pageSize: 'A4' },
+                { extend: 'csvHtml5', text: 'CSV', className: 'btn-csv-hidden', title: 'FatPipe_Device_Configuration_Backup' }
+            ],
+            language: {
+                search: '',
+                searchPlaceholder: 'Search treasury/branch, device type...',
+                lengthMenu: 'Show _MENU_ entries',
+                info: 'Showing _START_ to _END_ of _TOTAL_ entries'
+            }
+        });
+
+        // Attach export button handlers
+        $('#exportExcelBtn').off('click').on('click', function() {
+            dataTable.button('.btn-excel-hidden').trigger();
+            showExportToast('Excel export started');
+        });
+        $('#exportPdfBtn').off('click').on('click', function() {
+            dataTable.button('.btn-pdf-hidden').trigger();
+            showExportToast('PDF export started');
+        });
+        $('#exportCsvBtn').off('click').on('click', function() {
+            dataTable.button('.btn-csv-hidden').trigger();
+            showExportToast('CSV export started');
+        });
+    }
+
+    function getDriveFileUrl(value) {
+        if (!value || value === '—') return '';
+        const raw = String(value).trim();
+
+        // A cell may contain a HYPERLINK formula whose displayed text is "Backup available".
+        // Extract the URL from formulas such as =HYPERLINK("https://drive.google.com/open?id=FILE_ID","Backup available").
+        const formulaUrl = raw.match(/HYPERLINK\s*\(\s*["']([^"']+)["']/i);
+        const source = formulaUrl ? formulaUrl[1] : raw;
+
+        // Accept Drive URLs and bare Drive file IDs.
+        const match = source.match(/(?:[?&]id=|\/file\/d\/|\/uc\?(?:[^#]*&)?id=)([A-Za-z0-9_-]+)/);
+        const fileId = match ? match[1] : (/^[A-Za-z0-9_-]{15,}$/.test(source) ? source : '');
+        return fileId ? `https://drive.google.com/uc?export=download&id=${encodeURIComponent(fileId)}` : '';
+    }
+
+    function showExportToast(message) {
+        const $toast = $('#exportToast');
+        $toast.find('span').text(message);
+        $toast.addClass('show');
+        setTimeout(() => $toast.removeClass('show'), 2000);
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+        return String(text).replace(/[&<>"']/g, m => map[m]);
+    }
+
+    $(document).ready(function() {
+        loadTreasuryData();
+    });
+})();
+</script>
+</body>
+</html>
