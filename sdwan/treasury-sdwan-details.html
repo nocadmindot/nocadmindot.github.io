@@ -22,11 +22,11 @@
 
         
         .filter-card {
-            background: #fff0;
+            background: white;
             border-radius: 12px;
             padding: 24px;
             margin-bottom: 24px;
-            border: 1px solid #6bc9f76b;
+            border: 1px solid #e9ecef;
             display: flex;
             flex-wrap: wrap;
             align-items: center;
@@ -78,7 +78,7 @@
                 <div class="card-body">
                     <div class="filter-card">
                         <div style="display: flex; align-items: center; gap: 16px; flex: 1;">
-                            <span style="font-weight: 700; color: var(--primary);">Select Treasury:</span>
+                            <span style="font-weight: 700; color: #1a4b7a;">Select Treasury:</span>
                         </div>
                         <div style="display: flex; align-items: center; gap: 16px; flex: 2;">
                             <select id="treasurySelect" class="form-select" style="width: 100%;">
@@ -158,6 +158,8 @@
         const TREASURIES_SPREADSHEET_ID = "105FU8biUFJETqboPumblZ1BJYv7TzKiOy7Jwfbn3zTw";
         const WAN2_SPREADSHEET_ID = "1q70H2WSERyz_agwb0ZirYzs2MhAO1sIB7GKlAGxvtUo";
         const WAN2_SHEET_NAME = "WAN2 Details";
+        const BACKUP_SPREADSHEET_ID = "16ADBnxUOA6Gghl44mLqWmuJz-GvjoxdxVAdsHQqxl20";
+        const BACKUP_SHEET_NAME = "Form Responses 1";
         
         const SHEET_INSTALLATION = "Installation Status";
         const SHEET_WORKING = "Working Status";
@@ -172,10 +174,12 @@
         let mplsData = [];
         let treasuriesData = [];
         let wan2Data = [];
+        let backupConfigurationData = [];
         let treasuryList = [];
         let isDataLoaded = false;
         let isMplsLoaded = false;
         let isWan2Loaded = false;
+        let isBackupConfigurationLoaded = false;
         let isWorkingLoaded = false;
         let isAdminLoaded = false;
         let isTreasuriesLoaded = false;
@@ -328,6 +332,35 @@
             }
         }
         
+        async function loadBackupConfigurationData() {
+            if (isBackupConfigurationLoaded) return backupConfigurationData;
+            try {
+                const url = `https://sheets.googleapis.com/v4/spreadsheets/${BACKUP_SPREADSHEET_ID}/values/${encodeURIComponent(BACKUP_SHEET_NAME)}!B:D?key=${API_KEY_GSHEET}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                backupConfigurationData = (data.values && data.values.length > 0) ? data.values : [];
+                isBackupConfigurationLoaded = true;
+                return backupConfigurationData;
+            } catch (error) {
+                console.error("Error loading backup configuration sheet:", error);
+                backupConfigurationData = [];
+                return backupConfigurationData;
+            }
+        }
+
+        function getBackupConfigurationLink(treasuryName) {
+            if (!treasuryName || !backupConfigurationData || backupConfigurationData.length === 0) return '';
+            const target = treasuryName.toString().trim().toLowerCase();
+            // Use the latest matching response when multiple submissions exist.
+            for (let i = backupConfigurationData.length - 1; i >= 0; i--) {
+                const row = backupConfigurationData[i];
+                const responseTreasury = row[0] ? row[0].toString().trim() : ''; // Column B
+                const fileLink = row[2] ? row[2].toString().trim() : ''; // Column D
+                if (responseTreasury.toLowerCase() === target && fileLink) return fileLink;
+            }
+            return '';
+        }
+
         async function loadWorkingData() {
             if (isWorkingLoaded) return workingData;
             try {
@@ -469,7 +502,8 @@
                     loadWan2Data(),
                     loadWorkingData(),
                     loadAdminData(),
-                    loadTreasuriesData()
+                    loadTreasuriesData(),
+                    loadBackupConfigurationData()
                 ]);
                 
                 // Display all sections
@@ -524,7 +558,8 @@
                 { label: 'Installation Date', idx: 10 },
                 { label: 'Migration Date', idx: 11 },
                 { label: 'LAN Pool', custom: true },
-                { label: 'FatPipe Device IP (Gateway)', custom: true }
+                { label: 'FatPipe Device IP (Gateway)', custom: true },
+                { label: 'Backup Configuration', custom: true }
             ];
             
             let html = `<div class="table-responsive"><table class="table table-hover table-bordered">`;
@@ -542,9 +577,20 @@
                             if (col.label === 'LAN Pool') {
                                 const val = networkDetails.lanPool || '—';
                                 html += `<td><span class="lan-pool">${escapeHtml(val)}</span></td>`;
-                            } else {
+                            } else if (col.label === 'FatPipe Device IP (Gateway)') {
                                 const val = networkDetails.gatewayIP || '—';
-                                html += `<td><span class="gateway-ip">${escapeHtml(val)}</span></td>`;
+                                if (val !== '—' && isValidIPv4(val)) {
+                                    html += `<td><a class="gateway-ip" href="https://${escapeHtmlAttr(val)}" target="_blank" rel="noopener noreferrer">${escapeHtml(val)}</a></td>`;
+                                } else {
+                                    html += `<td><span class="gateway-ip">${escapeHtml(val)}</span></td>`;
+                                }
+                            } else if (col.label === 'Backup Configuration') {
+                                const backupLink = getBackupConfigurationLink(treasury);
+                                if (backupLink && isSafeHttpUrl(backupLink)) {
+                                    html += `<td><a href="${escapeHtmlAttr(backupLink)}" target="_blank" rel="noopener noreferrer"><i class="bi bi-download"></i> Download</a></td>`;
+                                } else {
+                                    html += `<td>No backup found, please upload backup zip file <a href="https://forms.gle/YL99wHTCrcLzQXrw7" target="_blank" rel="noopener noreferrer">here</a></td>`;
+                                }
                             }
                         } else {
                             let rawValue = (row[col.idx] && row[col.idx].toString().trim() !== '') ? row[col.idx].toString().trim() : '—';
@@ -755,6 +801,20 @@
             });
         };
         
+        function isValidIPv4(value) {
+            const parts = String(value).split('.');
+            return parts.length === 4 && parts.every(part => /^\d{1,3}$/.test(part) && Number(part) >= 0 && Number(part) <= 255);
+        }
+
+        function isSafeHttpUrl(value) {
+            try {
+                const url = new URL(value);
+                return url.protocol === 'https:' || url.protocol === 'http:';
+            } catch (error) {
+                return false;
+            }
+        }
+
         function escapeHtml(text) {
             if (!text) return '—';
             if (typeof text !== 'string') text = String(text);
