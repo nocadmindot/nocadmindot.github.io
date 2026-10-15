@@ -19,10 +19,12 @@
     <script src="../js/select2.min.js"></script>
     <style>
 
-
+     .card{
+border:none !important;
+}
         
         .filter-card {
-            background: white;
+           
             border-radius: 12px;
             padding: 24px;
             margin-bottom: 24px;
@@ -207,40 +209,26 @@
         }
         
         // =============================================
-        // CORE: Match treasury using 4-digit code as priority
+        // CORE: Match treasury by its 4-digit code
+        // If both values contain a code, the codes must match exactly.
+        // Never fall back to similar names when the codes differ.
         // =============================================
         function matchesTreasury(sheetValue, searchTreasury) {
             if (!sheetValue || !searchTreasury) return false;
-            
+
             const searchCode = extractTreasuryCode(searchTreasury);
             const sheetCode = extractTreasuryCode(sheetValue);
-            
-            // PRIORITY 1: Match by 4-digit code (case insensitive, format insensitive)
-            if (searchCode && sheetCode) {
-                if (searchCode === sheetCode) {
-                    return true;
-                }
+
+            // Treasury dropdown values are code-prefixed (e.g. 0707-Sub Treasury Mannar).
+            // When a selected code exists, match only the same code.
+            if (searchCode) {
+                return sheetCode === searchCode;
             }
-            
-            // FALLBACK: Try exact match after normalization
+
+            // Fallback only for legacy selections that do not begin with a 4-digit code.
             const normalizedSheet = normalizeTreasuryName(sheetValue);
             const normalizedSearch = normalizeTreasuryName(searchTreasury);
-            
-            // Check if normalized names match or one contains the other
-            if (normalizedSheet === normalizedSearch) return true;
-            if (normalizedSheet.includes(normalizedSearch) && normalizedSearch.length > 5) return true;
-            if (normalizedSearch.includes(normalizedSheet) && normalizedSheet.length > 5) return true;
-            
-            // Check if the name part (after code) matches
-            const searchNamePart = searchTreasury.toString().replace(/^\d{4}\s*[-–]\s*/, '').trim().toLowerCase();
-            const sheetNamePart = sheetValue.toString().replace(/^\d{4}\s*[-–]\s*/, '').trim().toLowerCase();
-            
-            if (searchNamePart && sheetNamePart) {
-                if (searchNamePart === sheetNamePart) return true;
-                if (searchNamePart.includes(sheetNamePart) || sheetNamePart.includes(searchNamePart)) return true;
-            }
-            
-            return false;
+            return normalizedSheet === normalizedSearch;
         }
         
         // =============================================
