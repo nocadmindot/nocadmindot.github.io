@@ -277,7 +277,7 @@
     <div class="page-header-left">
         <i class="bi bi-check2-circle"></i>
         <div>
-            <h1>Shutdown Management</h1>
+            <h1>fatpipe Device Shutdown Management</h1>
             <p>Confirm shutdown requests & verify power on</p>
         </div>
     </div>
@@ -677,6 +677,7 @@ let isAutoCheckActive = false;
 let checkCount = 0;
 let pendingCount = 0;
 let previousPendingCount = -1;
+let silentConfirmRefreshInProgress = false;
 
 // Power On - no auto-check, only initial count
 let powerOnInitialCount = 0;
@@ -1090,8 +1091,10 @@ async function performAutoCheck() {
         updatePendingBadge(count);
         pendingCount = count;
         
+        // Refresh the visible table silently; do not trigger View Requests,
+        // show the full-screen loader, or rebuild the whole table every 5 seconds.
         if ($('#confirmPane').hasClass('active-pane')) {
-            $('#viewConfirmBtn').click();
+            await refreshConfirmTableSilently(date);
         }
         
         $('#refreshStatusText').text(`Checked (${checkCount}) · ${count} pending`);
@@ -1099,6 +1102,160 @@ async function performAutoCheck() {
     } catch (err) {
         console.error('Auto-check error:', err);
         $('#refreshStatusText').text('Error checking');
+    }
+}
+
+
+// Silent reconciliation for Shutdown Confirmation.
+// Existing rows/buttons remain in the DOM unless their request has changed.
+async function refreshConfirmTableSilently(date) {
+    if (silentConfirmRefreshInProgress) return;
+    if (!date || !/^\d{2}\/\d{2}\/\d{4}$/.test(date)) return;
+
+    const $container = $('#confirmRecordsContainer');
+    const $table = $('#confirmTable');
+
+    // If no table exists (initial empty state or all earlier requests were
+    // confirmed), automatically create it when pending requests arrive.
+    // Existing tables are never rebuilt, so active Confirm clicks stay intact.
+    if (!$table.length) {
+        if (silentConfirmRefreshInProgress) return;
+        silentConfirmRefreshInProgress = true;
+        try {
+            const data = await readSheetData(`${SHEET_NAME}!A:I`);
+            const rows = data.values && data.values.length > 1 ? data.values.slice(1) : [];
+            const records = [];
+
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row || !row.length) continue;
+                const branch = row[0] ? String(row[0]).trim() : '';
+                if (!branch) continue;
+
+                const convertedDate = convertToDDMMYYYY(row[3] || '');
+                const confirmVal = String(row[5] || '').trim();
+                if (convertedDate === date && !confirmVal) {
+                    records.push({
+                        rowIndex: i + 2,
+                        branch,
+                        deviceType: String(row[1] || '').trim(),
+                        serial: String(row[2] || '').trim(),
+                        date: convertedDate,
+                        time: String(row[4] || '').trim(),
+                        confirm: 'Pending'
+                    });
+                }
+            }
+
+            if (records.length) {
+                renderConfirmRecords(records);
+                updatePendingBadge(records.length);
+                $('#confirmStatusMsg').removeClass('error success').addClass('info')
+                    .html(`<i class="bi bi-list"></i> Found ${records.length} pending request(s) for date: <strong>${date}</strong>.`).show();
+            }
+        } catch (err) {
+            console.warn('Silent confirmation table creation failed:', err);
+        } finally {
+            silentConfirmRefreshInProgress = false;
+        }
+        return;
+    }
+
+    silentConfirmRefreshInProgress = true;
+    try {
+        const data = await readSheetData(`${SHEET_NAME}!A:I`);
+        const rows = data.values && data.values.length > 1 ? data.values.slice(1) : [];
+        const latest = [];
+
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || !row.length) continue;
+
+            const branch = row[0] ? String(row[0]).trim() : '';
+            if (!branch) continue;
+
+            const convertedDate = convertToDDMMYYYY(row[3] || '');
+            const confirmVal = String(row[5] || '').trim();
+
+            if (convertedDate === date && !confirmVal) {
+                latest.push({
+                    rowIndex: i + 2,
+                    branch,
+                    deviceType: String(row[1] || '').trim(),
+                    serial: String(row[2] || '').trim(),
+                    date: convertedDate,
+                    time: String(row[4] || '').trim(),
+                    confirm: 'Pending'
+                });
+            }
+        }
+
+        const latestByRow = new Map(latest.map(record => [String(record.rowIndex), record]));
+        const existingRows = new Map();
+
+        $table.find('tbody tr').each(function () {
+            const $row = $(this);
+            const rowIndex = String($row.find('.confirm-btn').attr('data-row') || '');
+            if (rowIndex) existingRows.set(rowIndex, $row);
+        });
+
+        // Remove requests that are no longer pending, except a row whose
+        // confirmation is currently in progress.
+        existingRows.forEach(($row, rowIndex) => {
+            if (!latestByRow.has(rowIndex) && !$row.find('.confirm-btn').prop('disabled')) {
+                $row.remove();
+            }
+        });
+
+        // Add only genuinely new pending requests. Existing row elements and
+        // their active button state are preserved.
+        latest.forEach(record => {
+            const key = String(record.rowIndex);
+            if (existingRows.has(key)) return;
+
+            const safe = value => String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[ch]));
+
+            const rowHtml = `
+                <tr>
+                    <td></td>
+                    <td><span class="clickable-branch" data-branch="${safe(record.branch)}" title="Click to copy"><i class="bi bi-clipboard"></i> ${safe(record.branch)}</span></td>
+                    <td>${safe(record.deviceType)}</td>
+                    <td>${safe(record.serial)}</td>
+                    <td>${safe(record.date)}</td>
+                    <td>${safe(formatTimeDisplay(record.time))}</td>
+                    <td><span class="badge-pending"><i class="bi bi-clock"></i> Pending</span></td>
+                    <td>
+                        <button class="btn btn-success-custom confirm-btn" data-row="${record.rowIndex}" data-branch="${safe(record.branch)}">
+                            <i class="bi bi-check2"></i> Confirm
+                        </button>
+                    </td>
+                </tr>`;
+            $table.find('tbody').append(rowHtml);
+        });
+
+        const $bodyRows = $table.find('tbody tr');
+        if (!$bodyRows.length) {
+            renderConfirmRecords([]);
+        } else {
+            $bodyRows.each(function (index) {
+                $(this).children('td').first().text(index + 1);
+            });
+            $table.closest('.table-responsive').next('.mt-2')
+                .text(`Total: ${$bodyRows.length} pending request(s)`);
+            updatePendingBadge($bodyRows.length);
+
+            // Reapply the existing search without replacing the search input.
+            if ($('#confirmSearchInput').length) {
+                $('#confirmSearchInput').trigger('keyup');
+            }
+        }
+    } catch (err) {
+        // Silent refresh failures should not interrupt a user's confirmation.
+        console.warn('Silent confirmation table refresh failed:', err);
+    } finally {
+        silentConfirmRefreshInProgress = false;
     }
 }
 
@@ -1374,12 +1531,12 @@ function renderConfirmRecords(records) {
     
     container.html(html);
     
-    $('.clickable-branch').on('click', function() {
+    $('#confirmRecordsContainer').off('click.copyBranch', '.clickable-branch').on('click.copyBranch', '.clickable-branch', function() {
         const branch = $(this).data('branch');
         copyToClipboard(branch);
     });
     
-    $('.confirm-btn').on('click', async function() {
+    $('#confirmRecordsContainer').off('click.confirm', '.confirm-btn').on('click.confirm', '.confirm-btn', async function() {
         const rowIndex = $(this).data('row');
         const branch = $(this).data('branch');
         const $btn = $(this);
@@ -1389,6 +1546,7 @@ function renderConfirmRecords(records) {
         // No confirmation dialog. Show progress directly in this row.
         $btn.html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
         $btn.prop('disabled', true);
+        $row.attr('data-confirming', 'true');
         
         try {
             await updateSheetViaAppsScript('UPDATE_CONFIRM', { rowIndex: rowIndex });
@@ -1424,6 +1582,7 @@ function renderConfirmRecords(records) {
             Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to update. Please try again.' });
             $btn.html('<i class="bi bi-check2"></i> Confirm');
             $btn.prop('disabled', false);
+            $row.removeAttr('data-confirming');
         }
     });
     
