@@ -28,7 +28,6 @@ border:none !important;
             border-radius: 12px;
             padding: 24px;
             margin-bottom: 24px;
-            border: 1px solid #e9ecef;
             display: flex;
             flex-wrap: wrap;
             align-items: center;
@@ -63,7 +62,7 @@ border:none !important;
                 <div class="page-header-left">
                     <i class="bi bi-box-seam"></i>
                     <div>
-                        <h1>SDWAN Device & MPLS Details</h1>
+                        <h1>SDWAN- FatPipe Device & WAN Configuration Details</h1>
                         <p> Description  </p>
                     </div>
                 </div>
@@ -79,10 +78,10 @@ border:none !important;
          
                 <div class="card-body">
                     <div class="filter-card">
-                        <div style="display: flex; align-items: center; gap: 16px; flex: 1;">
-                            <span style="font-weight: 700; color: #1a4b7a;">Select Treasury:</span>
+                        <div style="display: flex; ">
+                            <span style="font-weight: 700; color: var(--primary);">Select Treasury:</span>
                         </div>
-                        <div style="display: flex; align-items: center; gap: 16px; flex: 2;">
+                        <div style="display: flex;  gap: 16px; flex: 2;">
                             <select id="treasurySelect" class="form-select" style="width: 100%;">
                                 <option value="">Loading treasuries...</option>
                             </select>
@@ -116,23 +115,23 @@ border:none !important;
                     
                     <!-- Device Configuration Details Section -->
                     <div class="section-title">
-                        Device Configuration Details
+                        FatPipe Device Configuration Details
                     </div>
                     <div id="installationTableContainer" class="table-container mb-4">
                         <div class="empty-state">
                             <i class="bi bi-server"></i>
-                            <h6>Select a treasury and click "View" to load device configuration</h6>
+                            <h6>Select a treasury and click "View" to show FatPipe device configuration</h6>
                         </div>
                     </div>
                     
                     <!-- Working Status Section -->
                     <div class="section-title">
-                        Working Status
+                        MPLS Contact Details
                     </div>
                     <div id="treasuryWorkingTableContainer" class="table-container mb-4">
                         <div class="empty-state">
                             <i class="bi bi-check-circle"></i>
-                            <h6>Select a treasury and click "View" to load working status</h6>
+                            <h6>Select a treasury and click "View" to Show MPLS Contact Details</h6>
                         </div>
                     </div>
                     
@@ -577,7 +576,7 @@ border:none !important;
                                 if (backupLink && isSafeHttpUrl(backupLink)) {
                                     html += `<td><a href="${escapeHtmlAttr(backupLink)}" target="_blank" rel="noopener noreferrer"><i class="bi bi-download"></i> Download</a></td>`;
                                 } else {
-                                    html += `<td>No backup found, please upload backup zip file <a href="https://forms.gle/YL99wHTCrcLzQXrw7" target="_blank" rel="noopener noreferrer">here</a></td>`;
+                                    html += `<td>No backup found, please upload backup zip file <a href="https://nocadmins.github.io/fatpipe_backup_form.html" target="_blank" rel="noopener noreferrer">here</a></td>`;
                                 }
                             }
                         } else {

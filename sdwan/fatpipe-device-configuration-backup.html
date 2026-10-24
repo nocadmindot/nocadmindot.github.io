@@ -24,7 +24,7 @@
                 </div>
       <div class="export-buttons">
             
-            <a class="export-btn csv" id="" href="https://forms.gle/YL99wHTCrcLzQXrw7" target="_blank">
+            <a class="export-btn csv" id="" href="https://nocadmins.github.io/fatpipe_backup_form.html" target="_blank">
                 <i class="bi bi-file-earmark-spreadsheet"></i> Open Form
             </a>
         </div>
@@ -44,7 +44,7 @@
                         <tr>
                             <th>Treasury/Branch</th>
                             <th>Device Type</th>
-                            <th>Backup ZIP</th>
+                            <th>Backup File</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -160,7 +160,7 @@
                         const backupLink = getDriveFileUrl(value);
                         if (type !== 'display') return backupLink ? 'Backup available' : 'Not available';
                         return backupLink
-                            ? `<a class="export-btn excel" href="${escapeHtml(backupLink)}" target="_blank" rel="noopener noreferrer"><i class="bi bi-download"></i> Download ZIP</a>`
+                            ? `<a class="export-btn excel" href="${escapeHtml(backupLink)}" target="_blank" rel="noopener noreferrer"><i class="bi bi-download"></i> Download </a>`
                             : '<span class="empty-cell">Not available</span>';
                     }
                 }
