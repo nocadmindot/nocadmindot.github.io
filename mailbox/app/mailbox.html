@@ -8,6 +8,16 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <link rel="icon" type="image/svg+xml" href="favicon.png">
 <link rel="stylesheet" href="mailbox-common.css">
+<style>
+  .mail-status.is-delivered { color: #16a34a; display: inline-flex; align-items: center; justify-content: center; margin-left: 8px; }
+  .mail-status.is-delivered .bi { font-size: 16px; }
+  .send-btn.is-sending .send-pending-icon { color: #dc2626 !important; }
+  .send-btn.is-sending { cursor: progress; }
+</style>
+
+
+
+
 </head>
 <body>
 <div class="app">
@@ -26,14 +36,15 @@
   <h3 id="drawerName">User</h3>
   <p id="drawerEmail"></p>
   <p id="drawerRole"></p>
+  <button id="logoutBtn" class="drawer-logout" type="button"><i class="bi bi-box-arrow-right"></i><span>Logout</span></button>
   <div class="theme-palette">
     <strong>Theme colour</strong>
     <div class="theme-swatches">
-      <button data-theme="#2563eb" style="--swatch:#2563eb" aria-label="Blue"></button>
-      <button data-theme="#0f9d78" style="--swatch:#0f9d78" aria-label="Teal"></button>
-      <button data-theme="#7c3aed" style="--swatch:#7c3aed" aria-label="Violet"></button>
-      <button data-theme="#db6b18" style="--swatch:#db6b18" aria-label="Orange"></button>
-      <button data-theme="#c0266d" style="--swatch:#c0266d" aria-label="Pink"></button>
+      <button data-theme="#2563eb" aria-label="Blue"></button>
+      <button data-theme="#0f9d78" aria-label="Teal"></button>
+      <button data-theme="#7c3aed" aria-label="Violet"></button>
+      <button data-theme="#db6b18" aria-label="Orange"></button>
+      <button data-theme="#c0266d" aria-label="Pink"></button>
     </div>
   </div>
 </aside>
@@ -44,7 +55,7 @@
 </nav>
 
 <div id="workspaceStage" class="workspace-stage">
-  <main class="main" id="foldersWorkspace">
+  <main class="main reading-hidden" id="foldersWorkspace">
     <aside class="sidebar">
       <button id="composeBtn" class="compose-btn"><i class="bi bi-pencil-square"></i><span>Compose</span></button>
       <div class="folder-title">Folders</div>
@@ -55,7 +66,6 @@
       <button class="folder" data-folder="ARCHIVE"><i class="bi bi-archive"></i><span>Archive</span></button>
       <button class="folder" data-folder="SPAM"><i class="bi bi-exclamation-triangle"></i><span>Spam</span></button>
       <button class="folder" data-folder="TRASH"><i class="bi bi-trash3"></i><span>Trash</span></button>
-      <div class="logout-side"><button id="logoutBtn"><i class="bi bi-box-arrow-right"></i><span>Logout</span></button></div>
     </aside>
     <section class="mail-area">
       <div class="list-head">
@@ -77,14 +87,14 @@
       </div>
       <div id="toolbar" class="toolbar"><button class="icon-btn" id="markReadBtn" title="Mark read"><i class="bi bi-envelope-open"></i></button><button class="icon-btn" id="markUnreadBtn" title="Mark unread"><i class="bi bi-envelope"></i></button><button class="icon-btn" id="archiveBtn" title="Archive"><i class="bi bi-archive"></i></button><button class="icon-btn" id="spamBtn" title="Spam"><i class="bi bi-exclamation-octagon"></i></button><button class="icon-btn" id="deleteBtn" title="Trash"><i class="bi bi-trash3"></i></button></div>
       <div id="mailList" class="mail-list"><div class="loading-inline"><span class="panel-spinner" aria-label="Loading"></span></div></div>
-      <div class="pager"><span id="rangeText">—</span><div style="display:flex;align-items:center;gap:5px"><select id="pageSize"><option value="25">25</option><option value="50">50</option></select><button id="prevPage" disabled>‹</button><span id="pageText">1 / 1</span><button id="nextPage" disabled>›</button></div></div>
+      <div class="pager"><span id="rangeText">—</span><div class="pager-controls"><select id="pageSize"><option value="25">25</option><option value="50">50</option></select><button id="prevPage" disabled>‹</button><span id="pageText">1 / 1</span><button id="nextPage" disabled>›</button></div></div>
     </section>
     <div id="paneSplitter" class="splitter" role="separator" aria-orientation="vertical" aria-label="Resize mail list and reading pane" title="Drag to resize"></div>
     <section id="readPane" class="read-pane">
       <div id="readEmpty" class="read-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg><strong>Select a message</strong><span>Choose an email from the list to read it here.</span></div>
       <div id="readContent" class="read-content hidden">
-        <div class="read-header"><div class="read-actions"><button id="backBtn" class="icon-btn mobile-back" title="Back"><i class="bi bi-chevron-left"></i></button><button id="replyBtn" class="icon-btn" title="Reply"><i class="bi bi-reply"></i></button><button id="forwardBtn" class="icon-btn" title="Forward"><i class="bi bi-forward"></i></button><button id="readArchiveBtn" class="icon-btn" title="Archive"><i class="bi bi-archive"></i></button><button id="readDeleteBtn" class="icon-btn" title="Trash"><i class="bi bi-trash3"></i></button><button id="readStarBtn" class="icon-btn" title="Star"><i class="bi bi-star"></i></button></div><div id="readSubject" class="read-subject">(No subject)</div><div class="read-meta"><div id="readAvatar" class="read-avatar">U</div><div class="read-sender"><div id="readSenderName" class="read-sender-name"></div><div id="readSenderEmail" class="read-sender-email"></div><div id="readRecipients" class="read-recipients"></div></div><div id="readDate" class="read-date"></div></div></div>
-        <div id="readBody" class="read-body"></div><div id="attachmentList" class="attachment-list"></div>
+        <div class="thread-topbar"><button id="backBtn" class="icon-btn mobile-back" title="Back"><i class="bi bi-chevron-left"></i></button><div id="readSubject" class="read-subject">(No subject)</div><span id="threadCount" class="thread-count"></span></div>
+        <div id="threadMessages" class="thread-messages"><div class="loading-inline"><span class="panel-spinner" aria-label="Loading"></span></div></div>
       </div>
     </section>
   </main>
@@ -93,7 +103,7 @@
 </div>
 </div>
 
-<div id="successModal" class="modal"><div class="success-box"><div class="success-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg></div><h3>Message Sent</h3><p>Your message has been successfully delivered.</p><div id="successReference" class="reference">Reference: —</div><div style="margin-top:20px"><button id="successOk" class="send-btn" style="margin:auto;min-width:80px">OK</button></div></div></div>
+<div id="successModal" class="modal"><div class="success-box"><div class="success-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg></div><h3>Message Sent</h3><p>Your message has been successfully delivered.</p><div id="successReference" class="reference">Reference: —</div><div class="success-actions"><button id="successOk" class="send-btn success-ok">OK</button></div></div></div>
 <div id="loadingOverlay" class="loading-overlay" aria-hidden="true"><div class="loading-box"><span class="big-spinner" aria-label="Loading"></span></div></div>
 
 <div id="unifiedAlert" class="alert-box" role="alert">
@@ -115,8 +125,18 @@
   </div>
 </div>
 
+<!-- Recipient directory picker -->
+<div id="recipientDirectoryModal" class="recipient-directory-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="recipientDirectoryTitle">
+  <div class="recipient-directory-dialog">
+    <div class="recipient-directory-head"><div><h3 id="recipientDirectoryTitle">Mail ID Details</h3><p>Select one or more recipients to insert into the address field.</p></div><button type="button" id="recipientDirectoryClose" class="icon-btn" aria-label="Close recipient directory">×</button></div>
+    <div class="recipient-directory-tools"><input id="recipientDirectorySearch" type="search" placeholder="Search name, designation or mail ID…" autocomplete="off"><label class="recipient-select-all"><input type="checkbox" id="recipientDirectorySelectAll"> Select all</label><span id="recipientDirectoryCount">Loading…</span></div>
+    <div id="recipientDirectoryList" class="recipient-directory-list"><div class="recipient-directory-loading">Loading Mail ID Details…</div></div>
+    <div class="recipient-directory-foot"><span id="recipientDirectorySelected">0 selected</span><div><button type="button" id="recipientDirectoryCancel" class="secondary-btn">Cancel</button><button type="button" id="recipientDirectoryInsert" class="send-btn">Insert selected</button></div></div>
+  </div>
+</div>
+
 <script>
-window.MAILBOX_API_URL=window.MAILBOX_API_URL||'https://script.google.com/macros/s/AKfycbztFYkp6V7YglnFLtZ7GbEXzoctYiBilV4lA4VgLm3WFKF8lYENWdM90_zy0uC1gmdG/exec';
+window.MAILBOX_API_URL=window.MAILBOX_API_URL||'https://script.google.com/macros/s/AKfycbxUSVKvxyqpx50TzqxikOv2hmPEN-N0sXWwXVmwVTgx9pXaQ326Hk9FUWTKvIbRMbia/exec';
 const MailboxAPI=(()=>{
  async function request(action,payload={}){const response=await fetch(window.MAILBOX_API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({action},payload)),redirect:'follow'});if(!response.ok)throw new Error('Server error: '+response.status);const data=await response.json();if(!data.ok)throw new Error(data.error||'Request failed.');return data}
  const token=()=>sessionStorage.getItem('mailbox_token')||'';
@@ -124,7 +144,7 @@ const MailboxAPI=(()=>{
  const setSession=data=>{sessionStorage.setItem('mailbox_token',data.token);sessionStorage.setItem('mailbox_user',JSON.stringify(data.user))};
  const clearSession=()=>{sessionStorage.removeItem('mailbox_token');sessionStorage.removeItem('mailbox_user')};
  const requireLogin=()=>{if(!token())location.href='login.html'};
- return{request,token,user,setSession,clearSession,requireLogin,logout:()=>request('logout',{token:token()}),bootstrap:()=>request('bootstrap',{token:token()}),list:(folder,search='',page=1,pageSize=25)=>request('mailbox',{token:token(),folder,search,page,pageSize}),get:mailId=>request('getMessage',{token:token(),mailId}),suggestRecipients:query=>request('suggestRecipients',{token:token(),query}),send:payload=>request('sendMessage',Object.assign({token:token()},payload)),draft:payload=>request('saveDraft',Object.assign({token:token()},payload)),update:payload=>request('updateMessage',Object.assign({token:token()},payload))}
+ return{request,token,user,setSession,clearSession,requireLogin,logout:()=>request('logout',{token:token()}),bootstrap:()=>request('bootstrap',{token:token()}),list:(folder,search='',page=1,pageSize=25,sort='date-desc')=>request('mailbox',{token:token(),folder,search,page,pageSize,sort}),get:mailId=>request('getMessage',{token:token(),mailId}),getThread:mailId=>request('getThread',{token:token(),mailId}),suggestRecipients:query=>request('suggestRecipients',{token:token(),query}),send:payload=>request('sendMessage',Object.assign({token:token()},payload)),draft:payload=>request('saveDraft',Object.assign({token:token()},payload)),update:payload=>request('updateMessage',Object.assign({token:token()},payload))}
 })();
 
 (() => {
@@ -133,7 +153,7 @@ MailboxAPI.requireLogin();
 const $=id=>document.getElementById(id);
 const folders={INBOX:'Inbox',SENT:'Sent',DRAFT:'Drafts',STARRED:'Starred',ARCHIVE:'Archive',SPAM:'Spam',TRASH:'Trash'};
 let currentFolder=sessionStorage.getItem('mailbox_folder')||'INBOX';
-let currentPage=1,pageSize=25,totalPages=1,currentMessages=[],selectedIds=new Set(),selectedMailId='',selectedMessage=null,selectedAttachments=[];
+let currentPage=1,pageSize=25,totalPages=1,currentMessages=[],selectedIds=new Set(),selectedMailId='',selectedThreadMailId='',selectedMessage=null,selectedAttachments=[],threadMessages=[];
 let searchTimer=null,silentTimer=null,loading=false,loadSequence=0,composeMode='new',originalMessage=null,originalAttachments=[],sending=false,attachmentFiles=[];
 const folderCache=new Map();
 const folderViews=new Map();
@@ -147,16 +167,33 @@ $('avatar').textContent=initials(user.name||user.fullName,user.email||user.email
    ========================================================= */
 let currentSort = localStorage.getItem('mailbox_sort') || 'date-desc';
 
+function parseMailDate(value) {
+  if (value === null || value === undefined || value === '') return 0;
+  // The API may send today's date as a time-only string (e.g. "12:35 PM").
+  // Interpret that as today's local date so it sorts alongside full timestamps.
+  const raw = String(value).trim();
+  const timeOnly = raw.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)$/i);
+  if (timeOnly) {
+    let hours = Number(timeOnly[1]) % 12;
+    if (timeOnly[4].toUpperCase() === 'PM') hours += 12;
+    const d = new Date();
+    d.setHours(hours, Number(timeOnly[2]), Number(timeOnly[3] || 0), 0);
+    return d.getTime();
+  }
+  const parsed = new Date(value).getTime();
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 function sortMessages(list) {
   const arr = Array.isArray(list) ? list.slice() : [];
-  const [field, dir] = currentSort.split('-');
+  const [field, dir] = String(currentSort || 'date-desc').split('-');
   const mul = dir === 'asc' ? 1 : -1;
   arr.sort((a, b) => {
     let va, vb;
     switch (field) {
       case 'date':
-        va = new Date(a.date || 0).getTime();
-        vb = new Date(b.date || 0).getTime();
+        va = parseMailDate(a.date);
+        vb = parseMailDate(b.date);
         break;
       case 'sender':
         va = String(a.senderName || a.senderEmail || a.to || '').toLowerCase();
@@ -167,8 +204,8 @@ function sortMessages(list) {
         vb = String(b.subject || '').toLowerCase();
         break;
       default:
-        va = new Date(a.date || 0).getTime();
-        vb = new Date(b.date || 0).getTime();
+        va = parseMailDate(a.date);
+        vb = parseMailDate(b.date);
     }
     if (va < vb) return -1 * mul;
     if (va > vb) return 1 * mul;
@@ -185,13 +222,13 @@ let activeView = 'folders';
 function initials(name,email){const s=String(name||email||'U').trim();const p=s.split(/\s+/).filter(Boolean);return (p.length>1?p[0][0]+p[1][0]:s.slice(0,2)).toUpperCase()}
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
 function escAttr(v){return esc(v)}
-function formatDate(v){if(!v)return '';const d=new Date(v);if(Number.isNaN(d.getTime()))return String(v);const now=new Date();const same=d.toDateString()===now.toDateString();return same?d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}):d.toLocaleDateString([], {day:'2-digit',month:'short',year:'numeric'})}
+function formatDate(v){if(!v)return '';const raw=String(v).trim();const timeOnly=/^\d{1,2}:\d{2}(?::\d{2})?\s*(AM|PM)$/i.test(raw);const d=timeOnly?new Date(parseMailDate(raw)):new Date(v);if(Number.isNaN(d.getTime()))return raw;const now=new Date();const same=d.toDateString()===now.toDateString();return same?d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}):d.toLocaleDateString([], {day:'2-digit',month:'short',year:'numeric'})}
 function formatSize(bytes){const n=Number(bytes||0);if(!n)return '';if(n<1024)return n+' B';if(n<1048576)return (n/1024).toFixed(1)+' KB';if(n<1073741824)return (n/1048576).toFixed(1)+' MB';return (n/1073741824).toFixed(1)+' GB'}
 function showOverlay(){ $('loadingOverlay').classList.add('show'); $('loadingOverlay').setAttribute('aria-hidden','false') }
 function hideOverlay(){ $('loadingOverlay').classList.remove('show'); $('loadingOverlay').setAttribute('aria-hidden','true') }
 function saveFolder(){sessionStorage.setItem('mailbox_folder',currentFolder)}
 function updateFolderUI(){document.querySelectorAll('.folder').forEach(b=>b.classList.toggle('active',b.dataset.folder===currentFolder));$('listTitle').textContent=folders[currentFolder]||currentFolder}
-function signature(list){return (list||[]).map(m=>[m.mailId,m.date,m.subject,m.isRead?'1':'0',m.isStarred?'1':'0'].join('|')).join('~')}
+function signature(list){return (list||[]).map(m=>[m.mailId,m.date,m.subject,m.isRead?'1':'0',m.isStarred?'1':'0',m.threadId||'',m.conversationCount||1].join('|')).join('~')}
 
 /* =========================================================
    UNIFIED ALERT BOX
@@ -358,18 +395,24 @@ const ComposerManager = (() => {
       <div class="compose-body">
         <div class="alert hidden" data-role="alert"></div>
         <div class="alert hidden" data-role="loading">Loading original message…</div>
-        <div class="compose-row"><label class="compose-label">To</label><div class="recipient-box" data-recipient-box="to"><div class="recipient-chips" data-chips="to"></div><input class="compose-input recipient-entry" data-field="to" autocomplete="off" placeholder="Recipient email"><div class="autocomplete" data-role="suggestions-to"></div></div></div>
-        <div class="compose-row"><label class="compose-label">Cc</label><div class="recipient-box" data-recipient-box="cc"><div class="recipient-chips" data-chips="cc"></div><input class="compose-input recipient-entry" data-field="cc" autocomplete="off" placeholder="Optional"><div class="autocomplete" data-role="suggestions-cc"></div></div></div>
-        <div class="compose-row"><label class="compose-label">Bcc</label><div class="recipient-box" data-recipient-box="bcc"><div class="recipient-chips" data-chips="bcc"></div><input class="compose-input recipient-entry" data-field="bcc" autocomplete="off" placeholder="Optional"><div class="autocomplete" data-role="suggestions-bcc"></div></div></div>
+        <div class="compose-row"><label class="compose-label" for="recipient-to">To <button type="button" class="recipient-directory-trigger" data-open-recipient-directory="to" title="Choose from Mail ID Details" aria-label="Choose To recipients"><i class="bi bi-chevron-down"></i></button></label><div class="recipient-box" data-recipient-box="to"><div class="recipient-chips" data-chips="to"></div><input id="recipient-to" class="compose-input recipient-entry" data-field="to" autocomplete="off" placeholder="Recipient email"><div class="autocomplete" data-role="suggestions-to"></div></div></div>
+        <div class="compose-row"><label class="compose-label" for="recipient-cc">Cc <button type="button" class="recipient-directory-trigger" data-open-recipient-directory="cc" title="Choose from Mail ID Details" aria-label="Choose Cc recipients"><i class="bi bi-chevron-down"></i></button></label><div class="recipient-box" data-recipient-box="cc"><div class="recipient-chips" data-chips="cc"></div><input id="recipient-cc" class="compose-input recipient-entry" data-field="cc" autocomplete="off" placeholder="Optional"><div class="autocomplete" data-role="suggestions-cc"></div></div></div>
+        <div class="compose-row"><label class="compose-label" for="recipient-bcc">Bcc <button type="button" class="recipient-directory-trigger" data-open-recipient-directory="bcc" title="Choose from Mail ID Details" aria-label="Choose Bcc recipients"><i class="bi bi-chevron-down"></i></button></label><div class="recipient-box" data-recipient-box="bcc"><div class="recipient-chips" data-chips="bcc"></div><input id="recipient-bcc" class="compose-input recipient-entry" data-field="bcc" autocomplete="off" placeholder="Optional"><div class="autocomplete" data-role="suggestions-bcc"></div></div></div>
         <div class="compose-row"><label class="compose-label">Subject</label><input class="compose-input" data-field="subject" placeholder="Subject"></div>
-        <div class="compose-area rich-editor" contenteditable="true" role="textbox" aria-multiline="true" data-field="body" data-placeholder="Write your message…"></div>
-        <div class="editor-tools">
-          <button type="button" data-cmd="bold"><b>B</b></button>
-          <button type="button" data-cmd="italic"><i>I</i></button>
-          <button type="button" data-cmd="underline"><u>U</u></button>
-          <button type="button" data-cmd="insertUnorderedList">• List</button>
-          <button type="button" data-cmd="createLink">Link</button>
+        <div class="editor-tools" role="toolbar" aria-label="Message formatting">
+          <select data-editor-select="fontName" title="Font family"><option value="Arial">Arial</option><option value="Calibri">Calibri</option><option value="Georgia">Georgia</option><option value="Tahoma">Tahoma</option><option value="Times New Roman">Times New Roman</option><option value="Verdana">Verdana</option><option value="Courier New">Courier New</option></select>
+          <select data-editor-select="fontSize" title="Font size"><option value="2">Small</option><option value="3" selected>Normal</option><option value="4">Large</option><option value="5">Larger</option><option value="6">Huge</option><option value="7">Maximum</option></select>
+          <span class="editor-tool-separator"></span>
+          <button type="button" data-cmd="bold" title="Bold"><b>B</b></button><button type="button" data-cmd="italic" title="Italic"><i>I</i></button><button type="button" data-cmd="underline" title="Underline"><u>U</u></button><button type="button" data-cmd="strikeThrough" title="Strikethrough"><s>S</s></button><button type="button" data-cmd="superscript" title="Superscript">x<sup>2</sup></button><button type="button" data-cmd="subscript" title="Subscript">x<sub>2</sub></button>
+          <label class="editor-color-tool" title="Text colour">A <input type="color" data-editor-color="foreColor" aria-label="Text colour"></label><label class="editor-color-tool" title="Highlight colour"><i class="bi bi-highlighter"></i><input type="color" data-editor-color="hiliteColor" aria-label="Highlight colour" value="#fff59d"></label>
+          <span class="editor-tool-separator"></span>
+          <button type="button" data-cmd="justifyLeft" title="Align left"><i class="bi bi-text-left"></i></button><button type="button" data-cmd="justifyCenter" title="Align centre"><i class="bi bi-text-center"></i></button><button type="button" data-cmd="justifyRight" title="Align right"><i class="bi bi-text-right"></i></button><button type="button" data-cmd="justifyFull" title="Justify"><i class="bi bi-justify"></i></button>
+          <button type="button" data-cmd="insertUnorderedList" title="Bulleted list"><i class="bi bi-list-ul"></i></button><button type="button" data-cmd="insertOrderedList" title="Numbered list"><i class="bi bi-list-ol"></i></button><button type="button" data-cmd="outdent" title="Decrease indent"><i class="bi bi-outdent"></i></button><button type="button" data-cmd="indent" title="Increase indent"><i class="bi bi-indent"></i></button>
+          <select data-editor-select="formatBlock" title="Paragraph style"><option value="p">Paragraph</option><option value="h1">Heading 1</option><option value="h2">Heading 2</option><option value="h3">Heading 3</option><option value="h4">Heading 4</option><option value="pre">Code</option><option value="blockquote">Quote</option></select>
+          <span class="editor-tool-separator"></span>
+          <button type="button" data-cmd="createLink" title="Insert link"><i class="bi bi-link-45deg"></i></button><button type="button" data-cmd="unlink" title="Remove link"><i class="bi bi-link-45deg"></i><i class="bi bi-slash"></i></button><button type="button" data-cmd="insertHorizontalRule" title="Horizontal line"><i class="bi bi-hr"></i></button><button type="button" data-cmd="undo" title="Undo"><i class="bi bi-arrow-counterclockwise"></i></button><button type="button" data-cmd="redo" title="Redo"><i class="bi bi-arrow-clockwise"></i></button><button type="button" data-cmd="removeFormat" title="Clear formatting"><i class="bi bi-eraser"></i></button>
         </div>
+        <div class="compose-area rich-editor" contenteditable="true" role="textbox" aria-multiline="true" data-field="body" data-placeholder="Write your message…"></div>
         <div class="file-list" data-role="files"></div>
         <div class="compose-status" data-role="status"></div>
       </div>
@@ -380,7 +423,7 @@ const ComposerManager = (() => {
           <button class="secondary-btn" type="button" data-action="draft">Save draft</button>
           <button class="secondary-btn" type="button" data-action="discard">Discard</button>
         </div>
-        <button class="send-btn" type="button" data-action="send"><span class="send-spinner"></span><span class="send-label">Send</span></button>
+        <button class="send-btn" type="button" data-action="send"><i class="bi bi-hourglass-split send-pending-icon" aria-hidden="true"></i><span class="send-label">Send</span></button>
       </div>
     `;
     container.appendChild(el);
@@ -392,7 +435,7 @@ const ComposerManager = (() => {
     tab.innerHTML = '<span class="compose-tab-label"></span><span class="compose-tab-close" role="button" aria-label="Close compose tab">×</span>';
     tabsEl.appendChild(tab);
 
-    const state = { id, el, tab, mode, originalMessage: message, originalAttachments: attachments || [], attachmentFiles: [], recipients: {to:[],cc:[],bcc:[]}, sending: false, suggestTimer: null, suggestSeq: 0, dirty: false };
+    const state = { id, el, tab, mode, originalMessage: message, draftMailId: mode === 'draft' && message ? (message.mailId || message.id || '') : '', originalAttachments: attachments || [], attachmentFiles: [], recipients: {to:[],cc:[],bcc:[]}, sending: false, suggestTimer: {to:null,cc:null,bcc:null}, suggestSeq: {to:0,cc:0,bcc:0}, dirty: false };
     composers.set(id, state);
     bindComposerEvents(state);
     initComposerFields(state, mode, message, attachments);
@@ -408,12 +451,17 @@ const ComposerManager = (() => {
     const subjectInput = el.querySelector('[data-field="subject"]');
     const bodyEl = el.querySelector('[data-field="body"]');
 
-    titleEl.textContent = mode === 'reply' ? 'Reply message' : mode === 'forward' ? 'Forward message' : 'New message';
-    badgeEl.classList.toggle('hidden', mode === 'new');
+    titleEl.textContent = mode === 'reply' ? 'Reply message' : mode === 'forward' ? 'Forward message' : mode === 'draft' ? 'Edit draft' : 'New message';
+    badgeEl.classList.toggle('hidden', mode === 'new' || mode === 'draft');
     badgeEl.textContent = mode === 'reply' ? 'Reply' : 'Forward';
 
     if (mode === 'reply' && message) { addRecipient(state, 'to', message.senderEmail || '', false); subjectInput.value = replySubject(message.subject); bodyEl.innerHTML = '<br><br>'; }
     if (mode === 'forward' && message) { subjectInput.value = forwardSubject(message.subject); bodyEl.innerHTML = createForwarded(message); }
+    if (mode === 'draft' && message) {
+      subjectInput.value = message.subject || message.Subject || '';
+      bodyEl.innerHTML = message.body || message.Body || '';
+      ['to','cc','bcc'].forEach(field => String(message[field] || message[field.toUpperCase()] || '').split(/[;,]+/).map(v=>v.trim()).filter(Boolean).forEach(v=>addRecipient(state,field,v,false)));
+    }
 
     Object.defineProperty(bodyEl, 'value', { get() { return this.innerHTML; }, set(v) { this.innerHTML = v || ''; }, configurable: true });
 
@@ -442,13 +490,27 @@ const ComposerManager = (() => {
     el.querySelector('[data-action="draft"]').addEventListener('click', () => saveDraftComposer(state));
     el.querySelector('[data-action="discard"]').addEventListener('click', () => requestDiscardComposer(state));
 
+    const editor = el.querySelector('[data-field="body"]');
+    el.querySelectorAll('.editor-tools button').forEach(b => b.addEventListener('mousedown', e => e.preventDefault()));
     el.querySelectorAll('[data-cmd]').forEach(b => {
       b.addEventListener('click', () => {
         const cmd = b.dataset.cmd;
-        document.execCommand(cmd, false, cmd === 'createLink' ? prompt('Enter link URL') : null);
-        el.querySelector('[data-field="body"]').focus();
+        let value = null;
+        if (cmd === 'createLink') {
+          value = prompt('Enter link URL (include https://)');
+          if (!value) return;
+          if (!/^(https?:|mailto:)/i.test(value)) value = 'https://' + value;
+        }
+        editor.focus();
+        document.execCommand(cmd, false, value);
       });
     });
+    el.querySelectorAll('[data-editor-select]').forEach(control => control.addEventListener('change', () => {
+      editor.focus(); document.execCommand(control.dataset.editorSelect, false, control.value);
+    }));
+    el.querySelectorAll('[data-editor-color]').forEach(control => control.addEventListener('input', () => {
+      editor.focus(); document.execCommand(control.dataset.editorColor, false, control.value);
+    }));
 
     el.querySelector('[data-field="subject"]').addEventListener('input', () => syncTabLabel(state));
 
@@ -461,17 +523,29 @@ const ComposerManager = (() => {
       });
       input.addEventListener('input', () => {
         const raw = input.value;
-        if (/[;,]$/.test(raw)) { commitRecipient(state, field); hideSuggestions(suggestions); return; }
-        clearTimeout(state.suggestTimer);
-        const q = raw.trim();
-        if (!q || !q.includes('@')) { hideSuggestions(suggestions); return; }
-        const seq = ++state.suggestSeq;
-        state.suggestTimer = setTimeout(async () => {
-          try { const r = await MailboxAPI.suggestRecipients(q); if (seq === state.suggestSeq) renderSuggestions(suggestions, r.items || [], input, state, field); } catch (_) { hideSuggestions(suggestions); }
+        if (/[;,]$/.test(raw)) { ++state.suggestSeq[field]; clearTimeout(state.suggestTimer[field]); commitRecipient(state, field); hideSuggestions(suggestions); return; }
+
+        // Search only the current address token. Suggestions begin after 3 characters;
+        // an '@' is not required, so names and the beginning of email IDs can match.
+        const q = raw.split(/[;,]/).pop().trim();
+        state.dirty = true;
+        const seq = ++state.suggestSeq[field];
+        clearTimeout(state.suggestTimer[field]);
+        if (q.length < 3) { hideSuggestions(suggestions); return; }
+
+        state.suggestTimer[field] = setTimeout(async () => {
+          try {
+            const r = await MailboxAPI.suggestRecipients(q);
+            if (seq === state.suggestSeq[field] && input.value.split(/[;,]/).pop().trim() === q)
+              renderSuggestions(suggestions, r.items || [], input, state, field);
+          } catch (_) {
+            if (seq === state.suggestSeq[field]) hideSuggestions(suggestions);
+          }
         }, 180);
       });
-      input.addEventListener('blur', () => setTimeout(() => { commitRecipient(state, field); hideSuggestions(suggestions); }, 180));
-      el.querySelector(`[data-recipient-box="${field}"]`).addEventListener('click', () => input.focus());
+      input.addEventListener('blur', () => setTimeout(() => { commitRecipient(state, field); hideSuggestions(suggestions); }, 220));
+      el.querySelector(`[data-recipient-box="${field}"]`).addEventListener('click', (e) => { if (!e.target.closest('.recipient-directory-trigger')) input.focus(); });
+      el.querySelector(`[data-open-recipient-directory="${field}"]`).addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); openRecipientDirectory(state, field); });
     });
   }
 
@@ -504,9 +578,63 @@ const ComposerManager = (() => {
     container.innerHTML = items.map((x, i) => `<div class="suggestion" data-suggest-index="${i}"><div class="suggestion-name">${esc(x.name || x.email)}</div><div class="suggestion-email">${esc(x.email)}${x.department ? ' · ' + esc(x.department) : ''}</div></div>`).join('');
     container.classList.add('show');
     container.querySelectorAll('[data-suggest-index]').forEach(el => {
-      el.addEventListener('mousedown', (e) => { e.preventDefault(); const x = items[Number(el.dataset.suggestIndex)]; addRecipient(state, field, x.email); hideSuggestions(container); });
+      el.addEventListener('mousedown', (e) => { e.preventDefault(); const x = items[Number(el.dataset.suggestIndex)]; addRecipient(state, field, x.email); input.value = ''; ++state.suggestSeq[field]; clearTimeout(state.suggestTimer[field]); hideSuggestions(container); input.focus(); state.dirty = true; });
     });
   }
+
+  // Cache the user directory after the first successful load.
+  let recipientDirectoryCache = null;
+  let recipientDirectoryTarget = null;
+  let recipientDirectoryState = null;
+  let recipientDirectoryRows = [];
+  let recipientDirectorySelected = new Set();
+
+  function normalizeDirectoryItems(result) {
+    const candidates = [result && result.items, result && result.users, result && result.mailboxUsers, result && result.recipients, result && result.data && result.data.items, result && result.data && result.data.users];
+    const list = candidates.find(Array.isArray) || [];
+    const seen = new Set();
+    return list.map(x => ({
+      name: String(x.name || x.fullName || x.full_name || x.Name || x.displayName || '').trim(),
+      email: String(x.email || x.emailAddress || x.mailId || x.mailID || x.Email || x['Mail ID'] || x.mail || '').trim(),
+      designation: String(x.designation || x.Designation || x.title || x.jobTitle || '').trim(),
+      department: String(x.department || x.Department || x.role || x.Role || '').trim()
+    })).filter(x => { if (!validEmail(x.email)) return false; const k=x.email.toLowerCase(); if(seen.has(k)) return false; seen.add(k); return true; }).sort((a,b)=>(a.name||a.email).localeCompare(b.name||b.email));
+  }
+
+  async function fetchRecipientDirectory() {
+    if (recipientDirectoryCache) return recipientDirectoryCache;
+    let lastError = null;
+    try { const r=await MailboxAPI.request('listMailboxUsers',{}); const items=normalizeDirectoryItems(r); if(items.length)return recipientDirectoryCache=items; } catch(e) { lastError=e; }
+    try { const r=await MailboxAPI.bootstrap(); const items=normalizeDirectoryItems(r); if(items.length)return recipientDirectoryCache=items; } catch(e) { lastError=e; }
+    try { const r=await MailboxAPI.suggestRecipients('@'); const items=normalizeDirectoryItems(r); if(items.length)return recipientDirectoryCache=items; } catch(e) { lastError=e; }
+    throw new Error(lastError && lastError.message ? lastError.message : 'The mailbox user directory was not returned by the server.');
+  }
+
+  function renderRecipientDirectory() {
+    const q=$('recipientDirectorySearch').value.trim().toLowerCase();
+    const filtered=recipientDirectoryRows.filter(x=>[x.name,x.email,x.designation,x.department].join(' ').toLowerCase().includes(q));
+    $('recipientDirectoryCount').textContent=`${filtered.length} user${filtered.length===1?'':'s'}`;
+    $('recipientDirectoryList').innerHTML=filtered.length?filtered.map(x=>{const key=x.email.toLowerCase();return `<label class="recipient-directory-row"><input type="checkbox" data-directory-email="${escAttr(key)}" ${recipientDirectorySelected.has(key)?'checked':''}><span class="recipient-directory-person"><span class="recipient-directory-name">${esc(x.name||x.email)}</span><span class="recipient-directory-meta">${esc(x.email)}${x.designation?' · '+esc(x.designation):''}${x.department?' · '+esc(x.department):''}</span></span></label>`}).join(''):'<div class="recipient-directory-empty">No matching Mail ID Details found.</div>';
+    const selectedFiltered=filtered.filter(x=>recipientDirectorySelected.has(x.email.toLowerCase())).length;
+    $('recipientDirectorySelectAll').checked=filtered.length>0&&selectedFiltered===filtered.length;
+    $('recipientDirectorySelectAll').indeterminate=selectedFiltered>0&&selectedFiltered<filtered.length;
+    $('recipientDirectorySelected').textContent=`${recipientDirectorySelected.size} selected`;
+    $('recipientDirectoryList').querySelectorAll('[data-directory-email]').forEach(cb=>cb.addEventListener('change',()=>{const key=cb.dataset.directoryEmail;if(cb.checked)recipientDirectorySelected.add(key);else recipientDirectorySelected.delete(key);renderRecipientDirectory()}));
+  }
+
+  async function openRecipientDirectory(state,field) {
+    recipientDirectoryState=state;recipientDirectoryTarget=field;recipientDirectorySelected=new Set();$('recipientDirectorySearch').value='';
+    $('recipientDirectoryModal').classList.add('show');$('recipientDirectoryModal').setAttribute('aria-hidden','false');$('recipientDirectoryList').innerHTML='<div class="recipient-directory-loading">Loading Mail ID Details…</div>';$('recipientDirectoryCount').textContent='Loading…';$('recipientDirectorySelected').textContent='0 selected';
+    try { recipientDirectoryRows=await fetchRecipientDirectory();renderRecipientDirectory(); }
+    catch(err) {$('recipientDirectoryList').innerHTML=`<div class="recipient-directory-empty">Unable to load Mail ID Details.<br>${esc(err.message||'Please check the mailbox Apps Script backend.')}</div>`;$('recipientDirectoryCount').textContent='Unavailable'}
+  }
+  function closeRecipientDirectory() {$('recipientDirectoryModal').classList.remove('show');$('recipientDirectoryModal').setAttribute('aria-hidden','true');recipientDirectoryState=null;recipientDirectoryTarget=null;}
+  $('recipientDirectoryClose').addEventListener('click',closeRecipientDirectory);
+  $('recipientDirectoryCancel').addEventListener('click',closeRecipientDirectory);
+  $('recipientDirectoryModal').addEventListener('click',e=>{if(e.target===$('recipientDirectoryModal'))closeRecipientDirectory()});
+  $('recipientDirectorySearch').addEventListener('input',renderRecipientDirectory);
+  $('recipientDirectorySelectAll').addEventListener('change',()=>{const q=$('recipientDirectorySearch').value.trim().toLowerCase();recipientDirectoryRows.filter(x=>[x.name,x.email,x.designation,x.department].join(' ').toLowerCase().includes(q)).forEach(x=>{const key=x.email.toLowerCase();if($('recipientDirectorySelectAll').checked)recipientDirectorySelected.add(key);else recipientDirectorySelected.delete(key)});renderRecipientDirectory()});
+  $('recipientDirectoryInsert').addEventListener('click',()=>{if(!recipientDirectoryState||!recipientDirectoryTarget){closeRecipientDirectory();return}const state=recipientDirectoryState,field=recipientDirectoryTarget;const chosen=recipientDirectoryRows.filter(x=>recipientDirectorySelected.has(x.email.toLowerCase()));chosen.forEach(x=>addRecipient(state,field,x.email));state.dirty=state.dirty||chosen.length>0;state.el.querySelector(`[data-field="${field}"]`).focus();closeRecipientDirectory();if(chosen.length)showAlert(`${chosen.length} recipient${chosen.length===1?'':'s'} inserted into ${field.toUpperCase()}.`,'success',1800)});
 
   function syncTabLabel(state) {
     const el = state.el;
@@ -538,14 +666,22 @@ const ComposerManager = (() => {
     }
     const hasContent = isComposerDirty(state);
     if (!hasContent) { closeComposer(id); return; }
-    const confirmed = await showConfirm({
-      title: 'Close this message?',
-      message: 'You have unsent changes. If you close this tab, your message will be discarded.',
-      confirmText: 'Close & discard',
-      cancelText: 'Keep editing',
+    const saveFirst = await showConfirm({
+      title: 'Save draft before closing?',
+      message: 'This message has unsaved changes. Save it as a draft before closing the composer?',
+      confirmText: 'Save draft',
+      cancelText: 'Discard',
       variant: 'warn'
     });
-    if (confirmed) closeComposer(id);
+    if (saveFirst) { await saveDraftComposer(state, { closeAfter: true }); return; }
+    const discard = await showConfirm({
+      title: 'Discard unsaved message?',
+      message: 'The unsaved changes will be lost permanently.',
+      confirmText: 'Discard message',
+      cancelText: 'Keep editing',
+      variant: 'danger'
+    });
+    if (discard) closeComposer(id);
   }
 
   function isComposerDirty(state) {
@@ -623,8 +759,16 @@ const ComposerManager = (() => {
     state.sending = isSending;
     state.el.querySelectorAll('input, textarea, button, [contenteditable]').forEach(el => el.disabled = isSending);
     const sendBtn = state.el.querySelector('[data-action="send"]');
+    const sendIcon = sendBtn.querySelector('.send-pending-icon');
     sendBtn.classList.toggle('loading', isSending);
+    sendBtn.classList.toggle('is-sending', isSending);
     sendBtn.disabled = isSending;
+    if (sendIcon) {
+      sendIcon.className = 'bi ' + (isSending ? 'bi-hourglass-split' : 'bi-send') + ' send-pending-icon';
+      sendIcon.setAttribute('aria-label', isSending ? 'Sending' : 'Send');
+    }
+    const label = sendBtn.querySelector('.send-label');
+    if (label) label.textContent = isSending ? 'Sending…' : 'Send';
   }
 
   async function sendComposer(state) {
@@ -651,8 +795,19 @@ const ComposerManager = (() => {
       el.querySelector('[data-role="status"]').textContent = 'Preparing message…';
       const attachments = await readFiles(state);
       el.querySelector('[data-role="status"]').textContent = 'Sending message…';
-      const result = await MailboxAPI.send({ to, cc, bcc, subject, body: el.querySelector('[data-field="body"]').innerHTML, bodyType: 'HTML', attachments });
+      const original = state.originalMessage || null;
+      const result = await MailboxAPI.send({
+        to, cc, bcc, subject,
+        body: el.querySelector('[data-field="body"]').innerHTML,
+        bodyType: 'HTML',
+        attachments,
+        threadId: state.mode === 'reply' && original ? (original.threadId || '') : '',
+        parentMessageId: state.mode === 'reply' && original ? (original.messageId || '') : '',
+        replyTo: state.mode === 'reply' && original ? (original.senderEmail || '') : '',
+        forwardedFrom: state.mode === 'forward' && original ? (original.messageId || '') : ''
+      });
       setSendingState(state, false);
+      if (state.draftMailId) { MailboxAPI.update({mailId:state.draftMailId,Folder:'TRASH',Is_Deleted:'YES'}).catch(()=>{}); invalidateFolderCache('DRAFT'); }
       closeComposer(state.id);
       $('successReference').textContent = 'Reference: ' + (result.referenceNo || '—');
       $('successModal').classList.add('show');
@@ -661,16 +816,32 @@ const ComposerManager = (() => {
     } catch (err) { setSendingState(state, false); showAlert(err.message || 'Unable to send message.', 'error'); el.querySelector('[data-role="status"]').textContent = ''; }
   }
 
-  async function saveDraftComposer(state) {
+  async function saveDraftComposer(state, options = {}) {
     if (state.sending) return;
     const el = state.el;
     try {
       setSendingState(state, true);
-      const result = await MailboxAPI.draft({ to: recipientValue(state, 'to'), cc: recipientValue(state, 'cc'), bcc: recipientValue(state, 'bcc'), subject: el.querySelector('[data-field="subject"]').value, body: el.querySelector('[data-field="body"]').innerHTML, bodyType: 'HTML' });
+      const original = state.originalMessage || null;
+      const result = await MailboxAPI.draft({
+        ...(state.draftMailId ? {mailId: state.draftMailId} : {}),
+        to: recipientValue(state, 'to'),
+        cc: recipientValue(state, 'cc'),
+        bcc: recipientValue(state, 'bcc'),
+        subject: el.querySelector('[data-field="subject"]').value,
+        body: el.querySelector('[data-field="body"]').innerHTML,
+        bodyType: 'HTML',
+        threadId: state.mode === 'reply' && original ? (original.threadId || '') : '',
+        parentMessageId: state.mode === 'reply' && original ? (original.messageId || '') : '',
+        replyTo: state.mode === 'reply' && original ? (original.senderEmail || '') : '',
+        forwardedFrom: state.mode === 'forward' && original ? (original.messageId || '') : ''
+      });
       setSendingState(state, false);
+      if (result.mailId || result.id) state.draftMailId = result.mailId || result.id;
       el.querySelector('[data-role="status"]').textContent = 'Draft saved' + (result.referenceNo ? ' · ' + result.referenceNo : '');
-      invalidateFolderCache('DRAFT');
-      await load(1);
+      invalidateFolderCache('DRAFT'); folderViews.delete('DRAFT');
+      if (currentFolder === 'DRAFT') load(1,{silent:true}).catch(()=>{});
+      if (options.closeAfter) { closeComposer(state.id); showAlert('Draft saved. Composer closed.', 'success', 2500); }
+      else { showAlert('Draft saved.', 'success', 1800); }
     } catch (err) { setSendingState(state, false); showAlert(err.message || 'Unable to save draft.', 'error'); }
   }
 
@@ -684,7 +855,7 @@ const ComposerManager = (() => {
 /* =========================================================
    MAILBOX LOADING
    ========================================================= */
-function cacheKey(folder=currentFolder,page=1){return `${folder}|${$('searchInput').value.trim().toLowerCase()}|${page}|${pageSize}`}
+function cacheKey(folder=currentFolder,page=1){return `${folder}|${$('searchInput').value.trim().toLowerCase()}|${page}|${pageSize}|${currentSort}`}
 
 function applyMailboxData(data){
  currentMessages=sortMessages(data.messages);
@@ -721,7 +892,7 @@ async function load(page=1,opts={}){
  loading=true;
  if(!cached && !opts.silent)renderListLoading();
  try{
-  const data=await MailboxAPI.list(currentFolder,$('searchInput').value.trim(),page,pageSize);
+  const data=await MailboxAPI.list(currentFolder,$('searchInput').value.trim(),page,pageSize,currentSort);
   if(seq!==loadSequence)return;
   folderCache.set(key,{data,time:Date.now()});
   const changed = signature(data.messages||[]) !== signature(currentMessages) || Number(data.total||0)!==Number(currentMessages.length);
@@ -739,72 +910,161 @@ async function load(page=1,opts={}){
 
 function showInboxCount(n){const b=$('inboxCount');if(n>0){b.textContent=n;b.classList.remove('hidden')}else b.classList.add('hidden')}
 
+function sentStatusMarkup(m){
+  // A row in SENT is displayed only after the backend has saved the message.
+  // No recipient read/delivery receipt is requested or inferred.
+  return '<span class="mail-status is-delivered" title="Sent" aria-label="Sent"><i class="bi bi-check-circle"></i></span>';
+}
+
 function renderList(){
  if(!currentMessages.length){
    const folderName = folders[currentFolder] || currentFolder;
    $('mailList').innerHTML='<div class="empty"><div class="empty-title">No messages in '+esc(folderName)+'</div><div class="empty-text">This folder is empty. New messages will appear here.</div></div>';
    return
  }
- $('mailList').innerHTML=currentMessages.map(m=>`<div class="mail-row ${m.isRead?'':'unread'} ${m.mailId===selectedMailId?'selected':''}" data-id="${escAttr(m.mailId)}"><div class="mail-check"><input type="checkbox" data-select="${escAttr(m.mailId)}" ${selectedIds.has(m.mailId)?'checked':''}></div><div class="mail-main"><div class="mail-top"><div class="sender">${esc(m.senderName||m.senderEmail||m.to||'Unknown')}</div><div class="date">${esc(formatDate(m.date))}</div></div><div class="subject">${esc(m.subject||'(No subject)')} ${m.hasAttachment?'<span class="attachment-dot"><i class="bi bi-paperclip"></i></span>':''}</div><div class="preview">${esc(m.body||'')}</div></div><button class="star ${m.isStarred?'active':''}" data-star="${escAttr(m.mailId)}" title="${m.isStarred?'Unstar':'Star'}"><i class="bi ${m.isStarred?'bi-star-fill':'bi-star'}"></i></button></div>`).join('');
+ $('mailList').innerHTML=currentMessages.map(m=>{
+    const sent=currentFolder==='SENT';
+    const status=sent?sentStatusMarkup(m):'';
+    const sender=esc(m.senderName||m.senderEmail||m.to||'Unknown');
+    const recipient=sent&&m.to?`<span class="mail-recipient">to ${esc(m.to)}</span>`:'';
+    return `<div class="mail-row ${m.isRead?'':'unread'} ${m.mailId===selectedMailId?'selected':''}" data-id="${escAttr(m.mailId)}"><div class="mail-check"><input type="checkbox" data-select="${escAttr(m.mailId)}" ${selectedIds.has(m.mailId)?'checked':''}></div><div class="mail-main"><div class="mail-top"><div class="sender-line"><span class="sender">${sender}</span>${recipient}</div><div class="date">${esc(formatDate(m.date))}</div></div><div class="subject-line"><div class="subject">${esc(m.subject||'(No subject)')} ${m.hasAttachment?'<span class="attachment-dot"><i class="bi bi-paperclip"></i></span>':''}</div>${status}</div><div class="preview">${esc(m.body||'')}</div></div><div class="mail-row-end"><button class="star ${m.isStarred?'active':''}" data-star="${escAttr(m.mailId)}" title="${m.isStarred?'Unstar':'Star'}"><i class="bi ${m.isStarred?'bi-star-fill':'bi-star'}"></i></button>${Number(m.conversationCount||1)>1?`<span class="conversation-count" title="${Number(m.conversationCount)} messages in this conversation">${Number(m.conversationCount)}</span>`:''}</div></div>`;
+  }).join('');
  document.querySelectorAll('[data-select]').forEach(c=>c.addEventListener('click',e=>{e.stopPropagation();const id=c.dataset.select;if(c.checked)selectedIds.add(id);else selectedIds.delete(id);updateToolbar()}));
- document.querySelectorAll('[data-star]').forEach(b=>b.addEventListener('click',async e=>{e.stopPropagation();const id=b.dataset.star;const m=currentMessages.find(x=>x.mailId===id);try{b.disabled=true;await MailboxAPI.update({mailId:id,Is_Starred:m&&!m.isStarred?'YES':'NO'});invalidateFolderCache();await load(currentPage,{silent:true})}catch(err){showAlert(err.message||'Unable to update star.','error')}finally{b.disabled=false}}));
- document.querySelectorAll('.mail-row').forEach(r=>r.addEventListener('click',e=>{if(e.target.closest('input,button'))return;openMessage(r.dataset.id)}));
+ document.querySelectorAll('[data-star]').forEach(b=>b.addEventListener('click',async e=>{e.stopPropagation();const id=b.dataset.star;const m=currentMessages.find(x=>x.mailId===id);if(!m)return;const old=!!m.isStarred;m.isStarred=!old;renderList();try{await MailboxAPI.update({mailId:id,Is_Starred:m.isStarred?'YES':'NO'});invalidateFolderCache();folderViews.clear();if(currentFolder==='STARRED'&&!m.isStarred){currentMessages=currentMessages.filter(x=>x.mailId!==id);renderList()}else{folderCache.delete(cacheKey(currentFolder,currentPage));}showAlert(m.isStarred?'Added to Starred.':'Removed from Starred.','success',1500)}catch(err){m.isStarred=old;renderList();showAlert(err.message||'Unable to update star.','error')}}));
+ document.querySelectorAll('.mail-row').forEach(r=>r.addEventListener('click',e=>{if(e.target.closest('input,button'))return;if(currentFolder==='DRAFT')openDraft(r.dataset.id);else openMessage(r.dataset.id)}));
 }
 
 function updatePager(data){const total=Number(data.total||0);const start=total?((currentPage-1)*pageSize+1):0;const end=Math.min(currentPage*pageSize,total);$('rangeText').textContent=total?`${start}-${end} of ${total}`:'0 messages';$('pageText').textContent=`${currentPage} / ${totalPages}`;$('prevPage').disabled=!data.hasPrevious;$('nextPage').disabled=!data.hasNext;$('pageSize').value=String(pageSize)}
 function updateToolbar(){$('toolbar').classList.toggle('show',selectedIds.size>0)}
 function invalidateFolderCache(folder=currentFolder){for(const k of [...folderCache.keys()])if(k.startsWith(folder+'|'))folderCache.delete(k)}
 
-async function applySelected(changes){const ids=[...selectedIds];if(!ids.length)return;try{await Promise.all(ids.map(mailId=>MailboxAPI.update(Object.assign({mailId},changes))));selectedIds.clear();invalidateFolderCache();await load(currentPage)}catch(err){showAlert(err.message||'Unable to update messages.','error')}}
+async function applySelected(changes){
+ const ids=[...selectedIds];if(!ids.length)return;
+ try{
+   // Serialize writes to avoid bursts of simultaneous Apps Script executions.
+   for(const mailId of ids) await MailboxAPI.update(Object.assign({mailId},changes));
+   selectedIds.clear();invalidateFolderCache();folderViews.clear();
+   if(changes.Folder || changes.Is_Deleted==='YES' || changes.Is_Spam==='YES') { currentMessages=currentMessages.filter(m=>!ids.includes(m.mailId));renderList(); } else { currentMessages.forEach(m=>{if(ids.includes(m.mailId)){if(changes.Is_Read!==undefined)m.isRead=changes.Is_Read==='YES';}});renderList(); }
+   load(currentPage,{silent:true}).catch(()=>{});
+ }catch(err){showAlert(err.message||'Unable to update messages.','error')}
+}
 
 function paintReadHeader(m){
- selectedMailId=m.mailId||selectedMailId;
  $('readSubject').textContent=m.subject||'(No subject)';
- $('readSenderName').textContent=m.senderName||m.senderEmail||m.to||'';
- $('readSenderEmail').textContent=m.senderEmail?`<${m.senderEmail}>`:'';
- $('readAvatar').textContent=initials(m.senderName,m.senderEmail);
- $('readDate').textContent=formatDate(m.date)||m.date||'';
- let rec='To: '+(m.to||'—');if(m.cc)rec+=' • Cc: '+m.cc;if(m.bcc)rec+=' • Bcc: '+m.bcc;
- $('readRecipients').textContent=rec;
- $('readStarBtn').innerHTML=`<i class="bi ${m.isStarred?'bi-star-fill':'bi-star'}"></i>`;
- $('readStarBtn').style.color=m.isStarred?'#f59e0b':'';
+ $('threadCount').textContent=threadMessages.length?`${threadMessages.length} message${threadMessages.length===1?'':'s'}`:'';
 }
 
 async function openMessage(id){
  const row=currentMessages.find(x=>x.mailId===id);if(!row)return;
- selectedMailId=id;selectedMessage=row;selectedAttachments=[];
+ selectedMailId=id;selectedThreadMailId=id;selectedMessage=row;selectedAttachments=[];threadMessages=[];$('foldersWorkspace').classList.remove('reading-hidden');
  renderList();$('readEmpty').classList.add('hidden');$('readContent').classList.remove('hidden');$('readPane').classList.add('mobile-show');
- paintReadHeader(row);
- $('readBody').innerHTML='<div class="loading-inline"><span class="panel-spinner" aria-label="Loading"></span></div>';$('attachmentList').innerHTML='';
- if(row.isRead===false||!row.isRead){row.isRead=true;renderList();}
- try{const result=await MailboxAPI.get(id);if(selectedMailId!==id)return;selectedMessage=result.message||row;selectedAttachments=result.attachments||[];renderMessage(result)}catch(err){$('readBody').textContent=err.message||'Unable to load message.'}
+ $('readSubject').textContent=row.subject||'(No subject)';$('threadCount').textContent='';
+ $('threadMessages').innerHTML='<div class="loading-inline"><span class="panel-spinner" aria-label="Loading"></span></div>';
+ if(!row.isRead){row.isRead=true;renderList();}
+ try{
+   const result=await MailboxAPI.getThread(id);
+   if(selectedMailId!==id)return;
+   threadMessages=Array.isArray(result.messages)?result.messages:[];
+   if(!threadMessages.length)throw new Error('No messages found in this conversation.');
+   const chosen=threadMessages.find(x=>x.message.mailId===id)||threadMessages[threadMessages.length-1];
+   selectedMessage=chosen.message;selectedAttachments=chosen.attachments||[];
+   paintReadHeader(selectedMessage);renderThread();
+ }catch(err){$('threadMessages').innerHTML=`<div class="thread-empty">${esc(err.message||'Unable to load conversation.')}</div>`;}
 }
 
-function renderMessage(result){const m=result.message||{};paintReadHeader(m);const row=currentMessages.find(x=>x.mailId===selectedMailId);if(row)row.isRead=true;const body=$('readBody');if(String(m.bodyType||'').toUpperCase()==='HTML'){body.innerHTML=m.body||''}else{body.textContent=m.body||''}renderAttachments(result.attachments||[]);selectedMessage=m;selectedAttachments=result.attachments||[];renderList()}
-function renderAttachments(items){const c=$('attachmentList');c.innerHTML=(Array.isArray(items)?items:[]).map(a=>`<a class="attachment" href="${escAttr(a.url||'#')}" target="_blank" rel="noopener noreferrer"><span><i class="bi bi-paperclip"></i></span><span title="${escAttr(a.fileName)}">${esc(a.fileName||'Attachment')}</span><small>${esc(formatSize(a.size))}</small></a>`).join('')}
+function renderThread(){
+ const host=$('threadMessages');
+ const ordered=threadMessages.slice().reverse();
+ host.innerHTML=ordered.map((item,index)=>{
+   const m=item.message||{},files=item.attachments||[],mid=escAttr(m.mailId||'');
+   const expanded=index===0;
+   const selected=String(m.mailId||'')===String(selectedThreadMailId||selectedMailId||'');
+   const rawFolder=m.folder||m.Folder||m.folderName||m.mailFolder||currentFolder;
+   const folderKey=String(rawFolder||'').toUpperCase();
+   const folderLabel=folders[folderKey]||String(rawFolder||'');
+   const recipients=[m.to?`To: ${esc(m.to)}`:'',m.cc?`Cc: ${esc(m.cc)}`:'',m.bcc?`Bcc: ${esc(m.bcc)}`:''].filter(Boolean).join(' · ');
+   const body=String(m.bodyType||'').toUpperCase()==='HTML'?(m.body||''):`<div class="thread-plain-body">${esc(m.body||'')}</div>`;
+   const attachments=files.map(a=>`<a class="attachment" href="${escAttr(a.url||'#')}" target="_blank" rel="noopener noreferrer" download><span><i class="bi bi-paperclip"></i></span><span title="${escAttr(a.fileName)}">${esc(a.fileName||'Attachment')}</span><small>${esc(formatSize(a.size))}</small></a>`).join('');
+   return `<article class="thread-message ${expanded?'expanded':''} ${selected?'selected':''}" data-thread-mail="${mid}">
+     <div class="thread-message-head" role="button" tabindex="0" aria-expanded="${expanded}" data-thread-toggle="${mid}"><div class="thread-avatar">${esc(initials(m.senderName,m.senderEmail))}</div><div class="thread-person"><div class="thread-person-name">${esc(m.senderName||m.senderEmail||'Unknown sender')}</div><div class="thread-person-email">${esc(m.senderEmail||'')}</div><div class="thread-recipient-line"><span class="thread-recipients">${recipients||'Recipients not available'}</span><span class="thread-folder"><i class="bi bi-folder2"></i> ${esc(folderLabel)}</span></div></div><time class="thread-date">${esc(formatDate(m.date)||m.date||'')}</time></div>
+     <div class="thread-message-body">${body}</div>
+     ${attachments?`<div class="thread-attachments">${attachments}</div>`:''}
+     <div class="thread-message-actions">
+       <button class="thread-action" data-thread-action="reply" data-mail="${mid}" title="Reply"><i class="bi bi-reply"></i> Reply</button>
+       <button class="thread-action" data-thread-action="forward" data-mail="${mid}" title="Forward"><i class="bi bi-forward"></i> Forward</button>
+       <button class="thread-action ${m.isStarred?'active':''}" data-thread-action="star" data-mail="${mid}" title="${m.isStarred?'Unstar':'Star'}"><i class="bi ${m.isStarred?'bi-star-fill':'bi-star'}"></i></button>
+       <button class="thread-action" data-thread-action="read" data-mail="${mid}" title="Mark ${m.isRead?'unread':'read'}"><i class="bi ${m.isRead?'bi-envelope':'bi-envelope-open'}"></i> ${m.isRead?'Unread':'Read'}</button>
+       <button class="thread-action" data-thread-action="archive" data-mail="${mid}" title="Archive"><i class="bi bi-archive"></i> Archive</button>
+       <button class="thread-action" data-thread-action="spam" data-mail="${mid}" title="Report spam"><i class="bi bi-exclamation-octagon"></i> Spam</button>
+       <button class="thread-action danger" data-thread-action="trash" data-mail="${mid}" title="Move to Trash"><i class="bi bi-trash3"></i></button>
+     </div>
+   </article>`;
+ }).join('');
+}
 
-function closeRead(){selectedMailId='';selectedMessage=null;selectedAttachments=[];$('readContent').classList.add('hidden');$('readEmpty').classList.remove('hidden');$('readPane').classList.remove('mobile-show');renderList()}
-async function readAction(changes){if(!selectedMailId)return;try{await MailboxAPI.update(Object.assign({mailId:selectedMailId},changes));invalidateFolderCache();await load(currentPage,{silent:true});if(changes.Folder||changes.Is_Deleted){closeRead()}else{await openMessage(selectedMailId)}}catch(err){showAlert(err.message||'Unable to update message.','error')}}
+async function openDraft(id){
+ const row=currentMessages.find(x=>String(x.mailId)===String(id));if(!row)return;
+ try{
+   showAlert('Opening draft…','info',900);
+   const result=await MailboxAPI.get(id);
+   const draft=result.message||result.data||result;
+   const message=Object.assign({},row,draft,{mailId:id});
+   ComposerManager.createComposer('draft',message,[]);
+ }catch(err){showAlert(err.message||'Unable to open draft for editing.','error');}
+}
+
+async function refreshThread(){
+ if(!selectedMailId)return;
+ const id=selectedMailId;
+ const result=await MailboxAPI.getThread(id);
+ if(selectedMailId!==id)return;
+ threadMessages=Array.isArray(result.messages)?result.messages:[];
+ const chosen=threadMessages.find(x=>x.message.mailId===id)||threadMessages[threadMessages.length-1];
+ if(!chosen){closeRead();return;}
+ selectedMessage=chosen.message;selectedAttachments=chosen.attachments||[];paintReadHeader(selectedMessage);renderThread();
+}
+
+async function threadMessageAction(mailId,action){
+ const item=threadMessages.find(x=>String(x.message.mailId)===String(mailId));if(!item)return;
+ const m=item.message;
+ if(action==='reply'||action==='forward'){
+   ComposerManager.createComposer(action,m,item.attachments||[]);return;
+ }
+ let changes={};
+ if(action==='star')changes.Is_Starred=m.isStarred?'NO':'YES';
+ else if(action==='read')changes.Is_Read=m.isRead?'NO':'YES';
+ else if(action==='archive')changes={Folder:'ARCHIVE',Is_Archived:'YES',Is_Deleted:'NO',Is_Spam:'NO'};
+ else if(action==='spam')changes={Folder:'SPAM',Is_Spam:'YES',Is_Deleted:'NO'};
+ else if(action==='trash'){
+   const ok=await showConfirm({title:'Move to Trash?',message:'This message will be moved to the Trash folder. You can restore it later.',confirmText:'Move to Trash',cancelText:'Cancel',variant:'danger'});
+   if(!ok)return;changes={Folder:'TRASH',Is_Deleted:'YES'};
+ }
+ try{
+   // Update the visible UI immediately; refresh the server-backed list in the background.
+   if(action==='star') { m.isStarred=!m.isStarred; }
+   if(action==='read') { m.isRead=!m.isRead; }
+   if(['archive','spam','trash'].includes(action)) { threadMessages=threadMessages.filter(x=>String(x.message.mailId)!==String(mailId)); }
+   if(action==='archive'||action==='spam'||action==='trash') { closeRead(); currentMessages=currentMessages.filter(x=>String(x.mailId)!==String(mailId));renderList(); }
+   await MailboxAPI.update(Object.assign({mailId},changes));
+   invalidateFolderCache();folderViews.clear();
+   load(currentPage,{silent:true}).catch(()=>{});
+   if(!['archive','spam','trash'].includes(action)) await refreshThread();
+   showAlert(action==='star'?(m.isStarred?'Added to Starred.':'Removed from Starred.'):action==='read'?'Read status updated.': 'Message moved.', 'success', 1400);
+ }catch(err){showAlert(err.message||'Unable to update message.','error');}
+}
+
+$('threadMessages').addEventListener('click',e=>{
+ const action=e.target.closest('[data-thread-action]');if(action){threadMessageAction(action.dataset.mail,action.dataset.threadAction);return;}
+ const head=e.target.closest('[data-thread-toggle]');if(head){const card=head.closest('.thread-message');selectedThreadMailId=String(card.dataset.threadMail||'');$('threadMessages').querySelectorAll('.thread-message').forEach(node=>node.classList.toggle('selected',node===card));const expanded=card.classList.toggle('expanded');head.setAttribute('aria-expanded',String(expanded));}
+});
+$('threadMessages').addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('[data-thread-toggle]')){e.preventDefault();const card=e.target.closest('.thread-message');selectedThreadMailId=String(card.dataset.threadMail||'');$('threadMessages').querySelectorAll('.thread-message').forEach(node=>node.classList.toggle('selected',node===card));const expanded=card.classList.toggle('expanded');e.target.setAttribute('aria-expanded',String(expanded));}});
+function closeRead(){selectedMailId='';selectedThreadMailId='';selectedMessage=null;selectedAttachments=[];threadMessages=[];$('readContent').classList.add('hidden');$('readEmpty').classList.remove('hidden');$('readPane').classList.remove('mobile-show');$('foldersWorkspace').classList.add('reading-hidden');renderList()}
 
 /* =========================================================
    WIRE-UP
    ========================================================= */
 $('composeBtn').addEventListener('click',()=>ComposerManager.createComposer('new'));
 $('successOk').addEventListener('click',()=>{$('successModal').classList.remove('show');});
-$('replyBtn').addEventListener('click',()=>{if(selectedMessage)ComposerManager.createComposer('reply',selectedMessage,selectedAttachments)});
-$('forwardBtn').addEventListener('click',()=>{if(selectedMessage)ComposerManager.createComposer('forward',selectedMessage,selectedAttachments)});
-$('readArchiveBtn').addEventListener('click',()=>readAction({Folder:'ARCHIVE',Is_Archived:'YES',Is_Deleted:'NO',Is_Spam:'NO'}));
-$('readDeleteBtn').addEventListener('click',async()=>{
-  const ok = await showConfirm({
-    title: 'Move to Trash?',
-    message: 'This message will be moved to the Trash folder. You can restore it later.',
-    confirmText: 'Move to Trash',
-    cancelText: 'Cancel',
-    variant: 'danger'
-  });
-  if (ok) readAction({Folder:'TRASH',Is_Deleted:'YES'});
-});
-$('readStarBtn').addEventListener('click',async()=>{if(!selectedMailId)return;try{await readAction({Is_Starred:selectedMessage&&selectedMessage.isStarred?'NO':'YES'})}catch(e){showAlert(e.message,'error')}});
 $('backBtn').addEventListener('click',closeRead);
 
 /* sort dropdown — sync with saved preference */
@@ -812,8 +1072,8 @@ $('sortSelect').value = currentSort;
 $('sortSelect').addEventListener('change',()=>{
   currentSort = $('sortSelect').value;
   localStorage.setItem('mailbox_sort', currentSort);
-  currentMessages = sortMessages(currentMessages);
-  renderList();
+  folderCache.clear();folderViews.clear();currentPage=1;
+  load(1);
 });
 
 const prefetchTimers=new Map();
@@ -821,14 +1081,14 @@ const prefetchPromises=new Map();
 function prefetchFolder(folder){
  const key=cacheKey(folder,1);
  if(folderCache.has(key)||prefetchPromises.has(key)||folder===currentFolder)return;
- const promise=MailboxAPI.list(folder,'',1,pageSize).then(data=>{folderCache.set(key,{data,time:Date.now()});return data}).catch(()=>null).finally(()=>prefetchPromises.delete(key));
+ const promise=MailboxAPI.list(folder,'',1,pageSize,currentSort).then(data=>{folderCache.set(key,{data,time:Date.now()});return data}).catch(()=>null).finally(()=>prefetchPromises.delete(key));
  prefetchPromises.set(key,promise);
 }
 document.querySelectorAll('.folder').forEach(b=>{
  b.addEventListener('mouseenter',()=>{ const folder=b.dataset.folder; clearTimeout(prefetchTimers.get(folder)); prefetchTimers.set(folder,setTimeout(()=>prefetchFolder(folder),180)); });
  b.addEventListener('mouseleave',()=>clearTimeout(prefetchTimers.get(b.dataset.folder)));
  b.addEventListener('click',()=>{
-   if(currentFolder===b.dataset.folder) { switchView('folders'); return; }
+   if(currentFolder===b.dataset.folder) { closeRead(); switchView('folders'); return; }
    folderViews.set(currentFolder,{html:$('mailList').innerHTML,scrollTop:$('mailList').scrollTop,messages:currentMessages,page:currentPage,totalPages:totalPages});
    currentFolder=b.dataset.folder;currentPage=1;selectedMailId='';selectedMessage=null;selectedAttachments=[];saveFolder();updateFolderUI();closeRead();
    const view=folderViews.get(currentFolder);const c=folderCache.get(cacheKey(currentFolder,1));
@@ -887,7 +1147,7 @@ async function silentRefresh(){
   if(document.hidden){silentTimer=setTimeout(silentRefresh,30000);return}
   try{
     const key=cacheKey(currentFolder,currentPage);
-    const data=await MailboxAPI.list(currentFolder,$('searchInput').value.trim(),currentPage,pageSize);
+    const data=await MailboxAPI.list(currentFolder,$('searchInput').value.trim(),currentPage,pageSize,currentSort);
     folderCache.set(key,{data,time:Date.now()});
     const sig=signature(data.messages||[]);
     if(sig!==signature(currentMessages)){
@@ -950,7 +1210,9 @@ load(1).finally(()=>startSilent());
  const drawer=$('profileDrawer');
  av.addEventListener('click',()=>{drawer.classList.add('open');drawer.setAttribute('aria-hidden','false');av.setAttribute('aria-expanded','true')});
  $('closeProfile').addEventListener('click',()=>{drawer.classList.remove('open');drawer.setAttribute('aria-hidden','true');av.setAttribute('aria-expanded','false')});
- document.querySelectorAll('[data-theme]').forEach(b=>b.addEventListener('click',()=>{const c=b.dataset.theme;document.documentElement.style.setProperty('--mailbox-accent',c);document.documentElement.style.setProperty('--primary',c);localStorage.setItem('mailbox_theme_color',c)}));
+ const applyTheme=c=>{if(!/^#[0-9a-f]{6}$/i.test(String(c||'')))return;document.documentElement.style.setProperty('--mailbox-accent',c);document.documentElement.style.setProperty('--primary',c);document.documentElement.style.setProperty('--accent',c);document.querySelectorAll('[data-theme]').forEach(b=>b.classList.toggle('selected',b.dataset.theme.toLowerCase()===c.toLowerCase()));};
+ const savedTheme=localStorage.getItem('mailbox_theme_color')||'#2563eb';applyTheme(savedTheme);
+ document.querySelectorAll('[data-theme]').forEach(b=>b.addEventListener('click',()=>{const c=b.dataset.theme;applyTheme(c);localStorage.setItem('mailbox_theme_color',c)}));
 })();
 </script>
 </body>
