@@ -150,10 +150,27 @@
             <button id="clearFilterBtn" class="btn btn-sm btn-outline-secondary" title="Clear Filter"><i class="bi bi-x-circle"></i> Clear</button>
         </div>
 
+        <!-- Bulk status update toolbar -->
+        <div class="d-flex flex-wrap align-items-center gap-2 my-3 p-3 rounded border" id="bulkStatusToolbar">
+            <div class="form-check me-2">
+                <input class="form-check-input" type="checkbox" id="selectAllVisibleRows">
+                <label class="form-check-label" for="selectAllVisibleRows">Select visible rows</label>
+            </div>
+            <span class="small text-muted" id="selectedRowsCount">0 rows selected</span>
+            <label for="bulkResolveStatus" class="form-label mb-0 ms-md-2">Set resolve status:</label>
+            <select id="bulkResolveStatus" class="form-select" style="width:auto;min-width:180px">
+                <option value="">Choose status...</option>
+            </select>
+            <button type="button" id="bulkUpdateStatusBtn" class="btn btn-primary-custom" disabled>
+                <i class="bi bi-check2-square"></i> Update Selected
+            </button>
+        </div>
+
         <div class="table-responsive" id="tableContainer">
             <table id="faultsTable" class="table table-striped table-hover" style="width:100%">
                 <thead>
                     <tr>
+                        <th><input type="checkbox" id="selectAllHeaderRows" aria-label="Select all visible rows"></th>
                         <th>Ref #</th>
                         <th>Treasury Name</th>
                         <th>Connection</th>
@@ -266,6 +283,8 @@
     let flatpickrInstance, editFlatpickr;
     let isTableLoaded = false;
     let isMetadataLoaded = false;
+    // Keep selection by sheet row number so it survives DataTable redraws and pagination.
+    const selectedFaultRowIds = new Set();
 
     // ---------- helper functions ----------
     function showLoading(msg) {
@@ -623,6 +642,12 @@
         if ($('#resolveStatusFilter').hasClass('select2-hidden-accessible')) $('#resolveStatusFilter').select2('destroy');
         $('#resolveStatusFilter').select2({ theme: "bootstrap-5", placeholder: "Filter by status", width: '250px' });
         $('#resolveStatusFilter').val("Pending (Including Blank)").trigger('change');
+
+        const bulkStatus = $('#bulkResolveStatus');
+        bulkStatus.empty().append('<option value="">Choose status...</option>');
+        resolveStatusOptions.forEach(opt => {
+            bulkStatus.append(`<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`);
+        });
     }
 
     function initDataTable() {
@@ -630,6 +655,8 @@
         dataTable = $('#faultsTable').DataTable({
             data: [],
             columns: [
+                { data: null, orderable: false, searchable: false, className: "text-center", render: (data, type, row) =>
+                    `<input type="checkbox" class="row-select-checkbox" data-rowidx="${row.rowIndex}" aria-label="Select record ${escapeHtml(row.refNo)}">` },
                 { data: "refNo" }, { data: "treasuryName" }, { data: "connection" }, { data: "circuitId" }, { data: "callDate" },
                 { data: "lastFollowup", render: d => d ? (d.length>35 ? d.substring(0,35)+"..." : d) : "" },
                 { data: "remarks", render: d => d ? (d.length>25 ? d.substring(0,25)+"..." : d) : "" },
@@ -644,6 +671,13 @@
             order: [[0, 'asc']],
             pageLength: 25,
             drawCallback: function() {
+                syncBulkSelectionUI();
+                $('.row-select-checkbox').off('change').on('change', function() {
+                    const rowIdx = Number($(this).data('rowidx'));
+                    if (this.checked) selectedFaultRowIds.add(rowIdx);
+                    else selectedFaultRowIds.delete(rowIdx);
+                    syncBulkSelectionUI();
+                });
                 $('.edit-record-btn').off('click').on('click', function() {
                     const rowIdx = $(this).data('rowidx');
                     const record = filteredRecords.find(r => r.rowIndex === rowIdx);
@@ -658,6 +692,108 @@
             }
         });
     }
+
+    // ---------- bulk resolve-status update ----------
+    function syncBulkSelectionUI() {
+        const visibleCheckboxes = $('#faultsTable tbody .row-select-checkbox');
+        visibleCheckboxes.each(function() {
+            this.checked = selectedFaultRowIds.has(Number($(this).data('rowidx')));
+        });
+        const visibleCount = visibleCheckboxes.length;
+        const selectedVisibleCount = visibleCheckboxes.filter(':checked').length;
+        $('#selectAllVisibleRows, #selectAllHeaderRows').prop('checked', visibleCount > 0 && selectedVisibleCount === visibleCount);
+        $('#selectedRowsCount').text(`${selectedFaultRowIds.size} row${selectedFaultRowIds.size === 1 ? '' : 's'} selected`);
+        $('#bulkUpdateStatusBtn').prop('disabled', selectedFaultRowIds.size === 0 || !$('#bulkResolveStatus').val());
+    }
+
+    function selectVisibleFaultRows(checked) {
+        $('#faultsTable tbody .row-select-checkbox').each(function() {
+            const rowIdx = Number($(this).data('rowidx'));
+            if (checked) selectedFaultRowIds.add(rowIdx);
+            else selectedFaultRowIds.delete(rowIdx);
+        });
+        syncBulkSelectionUI();
+    }
+
+    $('#selectAllVisibleRows, #selectAllHeaderRows').on('change', function() {
+        selectVisibleFaultRows(this.checked);
+    });
+
+    $('#bulkResolveStatus').on('change', syncBulkSelectionUI);
+
+    $('#bulkUpdateStatusBtn').on('click', async function() {
+        const rowIds = Array.from(selectedFaultRowIds);
+        const newStatus = $('#bulkResolveStatus').val();
+        if (!rowIds.length || !newStatus) {
+            Swal.fire("Required", "Select at least one row and a resolve status.", "warning");
+            return;
+        }
+
+        const confirmation = await Swal.fire({
+            title: "Update selected records?",
+            text: `Set ${rowIds.length} selected record(s) to "${newStatus}"?`,
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonText: "Yes, update",
+            cancelButtonText: "Cancel"
+        });
+        if (!confirmation.isConfirmed) return;
+
+        const btn = $(this);
+        btn.prop('disabled', true).html('<i class="bi bi-hourglass-split"></i> Updating...');
+        let successCount = 0;
+        try {
+            for (const rowId of rowIds) {
+                const existing = faultRecords.find(r => Number(r.rowIndex) === Number(rowId));
+                if (!existing) continue;
+
+                // Send the complete existing record, changing only Resolve Status,
+                // so fields such as remarks and follow-up details are preserved.
+                const recordData = {
+                    treasuryName: existing.treasuryName || "",
+                    connection: existing.connection || "",
+                    circuitId: existing.circuitId || "",
+                    callDate: existing.callDate || "",
+                    lastFollowup: existing.lastFollowup || "",
+                    remarks: existing.remarks || "",
+                    linkStatus: existing.linkStatus || "",
+                    resolveStatus: newStatus
+                };
+                const payload = {
+                    action: "UPDATE_FAULT",
+                    sheetName: SHEET_FAULTS,
+                    data: recordData,
+                    rowId: Number(rowId)
+                };
+                // Keep the same Apps Script endpoint and update action used by the existing editor.
+                await fetch(APPS_SCRIPT_URL, {
+                    method: "POST",
+                    mode: "no-cors",
+                    cache: "no-cache",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                successCount++;
+            }
+            selectedFaultRowIds.clear();
+            $('#selectAllVisibleRows, #selectAllHeaderRows').prop('checked', false);
+            $('#bulkResolveStatus').val('');
+            await loadFilteredFaultRecords();
+            updateTableWithFilter();
+            syncBulkSelectionUI();
+            Swal.fire({
+                icon: "success",
+                title: "Bulk update submitted",
+                text: `Update requests sent for ${successCount} record(s). Refresh the table in a moment to verify the saved statuses.`
+            });
+        } catch (err) {
+            console.error("Bulk update error:", err);
+            Swal.fire("Error", `Only ${successCount} update request(s) were sent before the error. Refresh and verify the records.`, "error");
+        } finally {
+            btn.html('<i class="bi bi-check2-square"></i> Update Selected');
+            syncBulkSelectionUI();
+        }
+    });
 
     // ---------- edit modal ----------
     async function openEditModal(record) {

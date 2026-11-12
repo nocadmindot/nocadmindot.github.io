@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="MailBox">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="description" content="Mailbox • Secure internal service">
-  <title>MailBox</title>
+  <title>Discuss</title>
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="apple-touch-icon" href="favicon.png">
   <style>
@@ -84,10 +84,10 @@
       display: grid;
       place-items: center;
       margin: 0 auto 25px;
-      padding: 13px;
+     /* padding: 13px;*/
       border-radius: 26px;
-      background: #eef2ff;
-      box-shadow: 0 12px 28px rgba(79,70,229,.15);
+     /* background: #eef2ff;*/
+     /* box-shadow: 0 12px 28px rgba(79,70,229,.15);*/
     }
 
     .app-icon img {
@@ -256,15 +256,15 @@
   <main class="shell">
     <section class="card" aria-labelledby="app-title">
       <div class="app-icon">
-        <img src="favicon.png" alt="MailBox application icon">
+        <img src="favicon.svg" alt="application icon">
       </div>
 
-      <div class="eyebrow"><span class="status-dot" aria-hidden="true"></span> Internal mail service</div>
-      <h1 id="app-title">MailBox</h1>
-      <p class="description">Mailbox&nbsp; • &nbsp;Secure internal service</p>
+     <!-- <div class="eyebrow"><span class="status-dot" aria-hidden="true"></span> Internal mail service</div> -->
+      <h1 id="app-title">Discuss</h1>
+      <p class="description">Discussx&nbsp; • &nbsp;Secure internal service</p>
 
-      <a class="launch" href="./app/mailbox.html">
-        <span>Go to MailBox</span>
+      <a class="launch" href="app.html">
+        <span>Go to App</span>
         <svg class="arrow" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M5 12h14M13 5l7 7-7 7" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round"/>
@@ -277,10 +277,10 @@
                 stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
                 stroke-linejoin="round"/>
         </svg>
-        <span id="installButtonText">Install MailBox app</span>
+        <span id="installButtonText">Install app</span>
       </button>
       <p class="install-help" id="installHelp" role="status" aria-live="polite">
-        Add MailBox to your home screen for quick access.
+        Add Discuss app to your home screen for quick access.
       </p>
 
       <div class="divider"></div>
@@ -291,10 +291,9 @@
           <path d="m9 12 2 2 4-4" stroke="currentColor" stroke-width="1.7"
                 stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
-        Secure access to your internal mailbox
-      </div>
+             </div>
     </section>
-    <footer>MailBox · Secure internal service</footer>
+    <footer>Discuss - MailBox · Secure internal service</footer>
   </main>
   <script>
     (() => {

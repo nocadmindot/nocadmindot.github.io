@@ -239,6 +239,23 @@
                         <label class="form-label required">Resolve Status</label>
                         <select id="editResolveStatus" class="form-select" style="width:100%"></select>
                     </div>
+                    <div class="col-12 d-none" id="editBsnlContactSection">
+                        <div class="pt-3 border-top">
+                            <div class="fw-semibold mb-3"><i class="bi bi-person-lines-fill me-1"></i> BSNL Contact Details</div>
+                            <div class="mb-3">
+                                <div class="form-label mb-1">BA</div>
+                                <div id="editBADetail" class="small border rounded p-2"></div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="form-label mb-2"><i class="bi bi-person-badge me-1"></i> JTO Details</div>
+                                <div id="editJTODetails" class="row g-2"></div>
+                            </div>
+                            <div>
+                                <div class="form-label mb-2"><i class="bi bi-person-workspace me-1"></i> AGM Details</div>
+                                <div id="editAGMDetails" class="row g-2"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -280,6 +297,9 @@
     let linkStatusOptions = [];
     let resolveStatusOptions = [];
     let connectionMapping = {};
+    let treasuryBAMapping = {};
+    let bsnlContactRowsCache = null;
+    const BSNL_CONTACT_SPREADSHEET_ID = "1kE2F6_KF1S9O4-VMM9R039EJAkiT3HRx-mQZT7ycpv8";
     let flatpickrInstance, editFlatpickr;
     let isTableLoaded = false;
     let isMetadataLoaded = false;
@@ -306,16 +326,114 @@
         } catch(e) { console.error(`Error fetching ${sheetName}:`, e); return []; }
     }
 
+    function normalizeLookupValue(value) {
+        return (value == null ? "" : String(value)).trim().toLowerCase();
+    }
+
+    async function fetchBsnlContactRows() {
+        if (bsnlContactRowsCache) return bsnlContactRowsCache;
+        try {
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${BSNL_CONTACT_SPREADSHEET_ID}/values/${encodeURIComponent("Data")}!A:G?key=${API_KEY}`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`Contact sheet request failed: ${response.status}`);
+            const data = await response.json();
+            bsnlContactRowsCache = data.values || [];
+            return bsnlContactRowsCache;
+        } catch (error) {
+            console.error("Error fetching BSNL BA contact details:", error);
+            return [];
+        }
+    }
+
+    function clearBsnlContactDetails(message = "Not applicable for this connection") {
+        $("#editBADetail, #editJTODetails, #editAGMDetails").empty().text(message);
+    }
+
+    async function loadBsnlContactDetails() {
+        const connection = ($("#editConnectionSelect").val() || "").trim();
+        const isBsnlConnection = connection === "BSNL MPLS" || connection === "BSNL VPNoFTTH";
+
+        if (!isBsnlConnection) {
+            clearBsnlContactDetails();
+            $("#editBsnlContactSection").addClass("d-none");
+            return;
+        }
+
+        $("#editBsnlContactSection").removeClass("d-none");
+        $("#editBADetail, #editJTODetails, #editAGMDetails").empty();
+        $("#editBADetail").text("Fetching details...");
+
+        const treasuryName = $("#editTreasurySelect option:selected").text();
+        const baValue = treasuryBAMapping[normalizeLookupValue(treasuryName)] || "";
+
+        if (!baValue) {
+            clearBsnlContactDetails("BA value not found for selected treasury");
+            return;
+        }
+
+        const rows = await fetchBsnlContactRows();
+        const matches = rows.slice(1).filter(row =>
+            normalizeLookupValue(row[0]) === normalizeLookupValue(baValue)
+        );
+
+        $("#editBADetail").text(baValue);
+        if (!matches.length) {
+            $("#editJTODetails").text("No JTO details found for this BA");
+            $("#editAGMDetails").text("No AGM details found for this BA");
+            return;
+        }
+
+        const renderContactCards = (selector, entries, emptyMessage) => {
+            const container = $(selector).empty();
+            const validEntries = entries.filter(entry => entry.some(value => (value || "").toString().trim()));
+            if (!validEntries.length) {
+                container.append($('<div class="col-12 small text-muted"></div>').text(emptyMessage));
+                return;
+            }
+
+            validEntries.forEach((entry, index) => {
+                const card = $('<div class="col-12"></div>');
+                const panel = $('<div class="border rounded p-3"></div>');
+                panel.append($('<div class="small fw-semibold text-muted mb-2"></div>').text(`${index + 1}. Contact`));
+                const fields = [
+                    { label: "Name", icon: "bi-person", value: entry[0] },
+                    { label: "Phone", icon: "bi-telephone", value: entry[1] },
+                    { label: "Email", icon: "bi-envelope", value: entry[2] }
+                ];
+                const fieldRow = $('<div class="row g-3"></div>');
+                fields.forEach(field => {
+                    const column = $('<div class="col-md-4"></div>');
+                    const label = $('<div class="small text-muted mb-1"></div>')
+                        .append($(`<i class="bi ${field.icon} me-1"></i>`))
+                        .append(document.createTextNode(field.label));
+                    const value = $('<div class="small fw-medium text-break"></div>').text((field.value || "").toString().trim() || "—");
+                    column.append(label, value);
+                    fieldRow.append(column);
+                });
+                panel.append(fieldRow);
+                card.append(panel);
+                container.append(card);
+            });
+        };
+
+        renderContactCards("#editJTODetails", matches.map(row => [row[1], row[2], row[3]]), "No JTO details found for this BA");
+        renderContactCards("#editAGMDetails", matches.map(row => [row[4], row[5], row[6]]), "No AGM details found for this BA");
+    }
+
     async function loadMetadata() {
         if (isMetadataLoaded) return;
         showLoading("Loading form data...");
-        let treasRows = await fetchSheetDataDirect(SHEET_TREASURIES, "A:B");
+        let treasRows = await fetchSheetDataDirect(SHEET_TREASURIES, "A:D");
         treasuryOptions = [];
+        treasuryBAMapping = {};
         if(treasRows && treasRows.length > 1) {
             for(let i = 1; i < treasRows.length; i++) {
                 let name = treasRows[i][0] ? treasRows[i][0].toString().trim() : "";
                 let code = treasRows[i][1] ? treasRows[i][1].toString().trim() : "";
-                if(name && code) treasuryOptions.push({ id: code, text: name });
+                if(name && code) {
+                    treasuryOptions.push({ id: code, text: name });
+                    treasuryBAMapping[normalizeLookupValue(name)] = treasRows[i][3] ? treasRows[i][3].toString().trim() : "";
+                }
             }
         }
         let connRows = await fetchSheetDataDirect(SHEET_CONNECTIONS, "A:E");
@@ -803,6 +921,7 @@
         if(treasuryItem) $('#editTreasurySelect').val(treasuryItem.id).trigger('change');
         else $('#editTreasurySelect').val(null).trigger('change');
         $('#editConnectionSelect').val(record.connection).trigger('change');
+        await loadBsnlContactDetails();
         $('#editCircuitId').val(record.circuitId);
         $('#editCallDate').val(record.callDate);
         if(editFlatpickr) editFlatpickr.setDate(record.callDate, false);
@@ -870,6 +989,11 @@
             const circuit = await autoFetchCircuitId(conn, treasuryCode, treasuryName);
             $('#editCircuitId').val(circuit);
         }
+        await loadBsnlContactDetails();
+    });
+
+    $(document).on('change', '#editTreasurySelect', async function() {
+        await loadBsnlContactDetails();
     });
     // update label on any change
     $('#treasurySelect, #connectionSelect, #circuitId, #callDate, #followupSelect, #followupText, #linkStatus, #resolveStatus').on('change input', function() {

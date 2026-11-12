@@ -1,138 +1,45 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="color-scheme" content="light dark">
-<title>Mailbox</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-<link rel="icon" type="image/svg+xml" href="favicon.png">
-<link rel="stylesheet" href="mailbox-common.css">
-</head>
-<body>
-<div class="app">
-<header class="topbar">
-  <div class="brand"><div class="brand-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h16v13H4z"/><path d="m4 7 8 6 8-6"/></svg></div><div><div class="brand-name">Mailbox</div><div class="brand-sub"></div></div></div>
-  <div class="search"><svg class="search-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="searchInput" type="search" placeholder="Search mail..." autocomplete="off"><button id="clearSearch" class="clear-search" type="button">×</button></div>
-  <div class="account"><button id="refreshBtn" class="icon-btn" title="Refresh"><i class="bi bi-arrow-clockwise"></i></button><button id="avatar" class="avatar" type="button" aria-label="Open account details" aria-expanded="false">U</button></div>
-</header>
 
-<aside id="profileDrawer" class="profile-drawer" aria-hidden="true">
-  <div class="profile-drawer-head">
-    <strong>Account details</strong>
-    <button id="closeProfile" class="icon-btn" aria-label="Close profile">×</button>
-  </div>
-  <div class="profile-avatar" id="drawerAvatar">U</div>
-  <h3 id="drawerName">User</h3>
-  <p id="drawerEmail"></p>
-  <p id="drawerRole"></p>
-  <button id="logoutBtn" class="drawer-logout" type="button"><i class="bi bi-box-arrow-right"></i><span>Logout</span></button>
-  <div class="theme-palette">
-    <strong>Theme colour</strong>
-    <div class="theme-swatches">
-      <button data-theme="#2563eb" aria-label="Blue"></button>
-      <button data-theme="#0f9d78" aria-label="Teal"></button>
-      <button data-theme="#7c3aed" aria-label="Violet"></button>
-      <button data-theme="#db6b18" aria-label="Orange"></button>
-      <button data-theme="#c0266d" aria-label="Pink"></button>
-    </div>
-  </div>
-</aside>
-
-<nav class="workspace-tabs">
-  <button class="workspace-tab active" id="foldersTab" type="button">Folders</button>
-  <div id="composeTabs" class="compose-tabs"></div>
-</nav>
-
-<div id="workspaceStage" class="workspace-stage">
-  <main class="main reading-hidden" id="foldersWorkspace">
-    <aside class="sidebar">
-      <button id="composeBtn" class="compose-btn"><i class="bi bi-pencil-square"></i><span>Compose</span></button>
-      <div class="folder-title">Folders</div>
-      <button class="folder active" data-folder="INBOX"><i class="bi bi-inbox"></i><span>Inbox</span><b id="inboxCount" class="folder-count hidden">0</b></button>
-      <button class="folder" data-folder="SENT"><i class="bi bi-send"></i><span>Sent</span></button>
-      <button class="folder" data-folder="DRAFT"><i class="bi bi-file-earmark-text"></i><span>Drafts</span></button>
-      <button class="folder" data-folder="STARRED"><i class="bi bi-star"></i><span>Starred</span></button>
-      <button class="folder" data-folder="ARCHIVE"><i class="bi bi-archive"></i><span>Archive</span></button>
-      <button class="folder" data-folder="SPAM"><i class="bi bi-exclamation-triangle"></i><span>Spam</span></button>
-      <button class="folder" data-folder="TRASH"><i class="bi bi-trash3"></i><span>Trash</span></button>
-    </aside>
-    <section class="mail-area">
-      <div class="list-head">
-        <div id="listTitle" class="list-title">Inbox</div>
-        <div class="list-actions">
-          <span class="sort-wrap">
-            <select id="sortSelect" class="sort-select" title="Sort messages">
-              <option value="date-desc">Newest first</option>
-              <option value="date-asc">Oldest first</option>
-              <option value="sender-asc">Sender A → Z</option>
-              <option value="sender-desc">Sender Z → A</option>
-              <option value="subject-asc">Subject A → Z</option>
-              <option value="subject-desc">Subject Z → A</option>
-            </select>
-          </span>
-          <button id="selectAllBtn" class="icon-btn" title="Select all"><i class="bi bi-check2-square"></i></button>
-          <button id="refreshListBtn" class="icon-btn" title="Refresh"><i class="bi bi-arrow-clockwise"></i></button>
-        </div>
-      </div>
-      <div id="toolbar" class="toolbar"><button class="icon-btn" id="markReadBtn" title="Mark read"><i class="bi bi-envelope-open"></i></button><button class="icon-btn" id="markUnreadBtn" title="Mark unread"><i class="bi bi-envelope"></i></button><button class="icon-btn" id="archiveBtn" title="Archive"><i class="bi bi-archive"></i></button><button class="icon-btn" id="spamBtn" title="Spam"><i class="bi bi-exclamation-octagon"></i></button><button class="icon-btn" id="deleteBtn" title="Trash"><i class="bi bi-trash3"></i></button></div>
-      <div id="mailList" class="mail-list"><div class="loading-inline"><span class="panel-spinner" aria-label="Loading"></span></div></div>
-      <div class="pager"><span id="rangeText">—</span><div class="pager-controls"><select id="pageSize"><option value="25">25</option><option value="50">50</option></select><button id="prevPage" disabled>‹</button><span id="pageText">1 / 1</span><button id="nextPage" disabled>›</button></div></div>
-    </section>
-    <div id="paneSplitter" class="splitter" role="separator" aria-orientation="vertical" aria-label="Resize mail list and reading pane" title="Drag to resize"></div>
-    <section id="readPane" class="read-pane">
-      <div id="readEmpty" class="read-empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg><strong>Select a message</strong><span>Choose an email from the list to read it here.</span></div>
-      <div id="readContent" class="read-content hidden">
-        <div class="thread-topbar"><button id="backBtn" class="icon-btn mobile-back" title="Back"><i class="bi bi-chevron-left"></i></button><div id="readSubject" class="read-subject">(No subject)</div><span id="threadCount" class="thread-count"></span><button id="closeReadBtn" class="icon-btn read-pane-close" type="button" title="Close reading pane" aria-label="Close reading pane"><i class="bi bi-x-lg"></i></button></div>
-        <div id="threadMessages" class="thread-messages"><div class="loading-inline"><span class="panel-spinner" aria-label="Loading"></span></div></div>
-      </div>
-    </section>
-  </main>
-
-  <div id="composeContainer" class="compose-workspace" aria-hidden="true"></div>
-</div>
-</div>
-
-<div id="successModal" class="modal"><div class="success-box"><div class="success-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 6"/></svg></div><h3>Message Sent</h3><p>Your message has been successfully delivered.</p><div id="successReference" class="reference">Reference: —</div><div class="success-actions"><button id="successOk" class="send-btn success-ok">OK</button></div></div></div>
-<div id="loadingOverlay" class="loading-overlay" aria-hidden="true"><div class="loading-box"><span class="big-spinner" aria-label="Loading"></span></div></div>
-
-<div id="unifiedAlert" class="alert-box" role="alert">
-  <span class="alert-icon" id="alertIcon">ℹ️</span>
-  <span class="alert-msg" id="alertMsg"></span>
-  <button class="alert-close" id="alertClose" aria-label="Close">×</button>
-</div>
-
-<!-- Custom confirm dialog -->
-<div id="confirmOverlay" class="confirm-overlay" role="dialog" aria-modal="true" aria-hidden="true">
-  <div class="confirm-dialog">
-    <div class="confirm-icon" id="confirmIcon">?</div>
-    <h3 class="confirm-title" id="confirmTitle">Are you sure?</h3>
-    <p class="confirm-message" id="confirmMessage"></p>
-    <div class="confirm-actions">
-      <button class="confirm-btn" id="confirmCancel">Cancel</button>
-      <button class="confirm-btn primary" id="confirmOk">Confirm</button>
-    </div>
-  </div>
-</div>
-
-<!-- Recipient directory picker -->
-<div id="recipientDirectoryModal" class="recipient-directory-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="recipientDirectoryTitle">
-  <div class="recipient-directory-dialog">
-    <div class="recipient-directory-head"><div><h3 id="recipientDirectoryTitle">Mail ID Details</h3><p>Select one or more recipients to insert into the address field.</p></div><button type="button" id="recipientDirectoryClose" class="icon-btn" aria-label="Close recipient directory">×</button></div>
-    <div class="recipient-directory-tools"><input id="recipientDirectorySearch" type="search" placeholder="Search name, designation or mail ID…" autocomplete="off"><label class="recipient-select-all"><input type="checkbox" id="recipientDirectorySelectAll"> Select all</label><span id="recipientDirectoryCount">Loading…</span></div>
-    <div id="recipientDirectoryList" class="recipient-directory-list"><div class="recipient-directory-loading">Loading Mail ID Details…</div></div>
-    <div class="recipient-directory-foot"><span id="recipientDirectorySelected">0 selected</span><div><button type="button" id="recipientDirectoryCancel" class="secondary-btn">Cancel</button><button type="button" id="recipientDirectoryInsert" class="send-btn">Insert selected</button></div></div>
-  </div>
-</div>
-
-<script>
-window.MAILBOX_API_URL=window.MAILBOX_API_URL||'https://script.google.com/macros/s/AKfycbxUSVKvxyqpx50TzqxikOv2hmPEN-N0sXWwXVmwVTgx9pXaQ326Hk9FUWTKvIbRMbia/exec';
+window.MAILBOX_API_URL=window.MAILBOX_API_URL||'https://script.google.com/macros/s/AKfycbzSmkO0f-qB60RgFK4L8ZJ5XHJDcevJS6cJvbfEbgRpyWCaYJjWB01s0NFmwYsSJobj/exec';
 const MailboxAPI=(()=>{
- async function request(action,payload={}){const response=await fetch(window.MAILBOX_API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({action},payload)),redirect:'follow'});if(!response.ok)throw new Error('Server error: '+response.status);const data=await response.json();if(!data.ok)throw new Error(data.error||'Request failed.');return data}
- const token=()=>sessionStorage.getItem('mailbox_token')||'';
- const user=()=>{try{return JSON.parse(sessionStorage.getItem('mailbox_user')||'null')}catch(_){return null}};
- const setSession=data=>{sessionStorage.setItem('mailbox_token',data.token);sessionStorage.setItem('mailbox_user',JSON.stringify(data.user))};
- const clearSession=()=>{sessionStorage.removeItem('mailbox_token');sessionStorage.removeItem('mailbox_user')};
+ const inFlightRequests=new Map();
+ const READ_ACTIONS=new Set(['mailbox','getMessage','getThread','bootstrap','listMailboxUsers','listThreadProfileImages','suggestRecipients','getProfile']);
+ async function request(action,payload={}){
+   const dedupe=READ_ACTIONS.has(action);
+   const key=dedupe?action+'|'+JSON.stringify(payload):'';
+   if(dedupe&&inFlightRequests.has(key))return inFlightRequests.get(key);
+   const task=(async()=>{
+     const response=await fetch(window.MAILBOX_API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({action},payload)),redirect:'follow'});
+     if(!response.ok)throw new Error('Server error: '+response.status);
+     const data=await response.json();
+     if(!data.ok)throw new Error(data.error||'Request failed.');
+     return data;
+   })();
+   if(dedupe)inFlightRequests.set(key,task);
+   try{return await task}
+   finally{if(dedupe&&inFlightRequests.get(key)===task)inFlightRequests.delete(key)}
+ }
+ // Persist authentication across browser restarts. Migrate existing sessionStorage
+ // sessions (created by the current login page) into localStorage on first load.
+ const readStored=(key)=>localStorage.getItem(key)||sessionStorage.getItem(key)||'';
+ const token=()=>readStored('mailbox_token');
+ const user=()=>{try{return JSON.parse(readStored('mailbox_user')||'null')}catch(_){return null}};
+ const setSession=data=>{
+   if(!data||!data.token)throw new Error('Invalid login session.');
+   localStorage.setItem('mailbox_token',data.token);
+   localStorage.setItem('mailbox_user',JSON.stringify(data.user||{}));
+   // Keep a compatibility copy for any existing page code still reading sessionStorage.
+   sessionStorage.setItem('mailbox_token',data.token);
+   sessionStorage.setItem('mailbox_user',JSON.stringify(data.user||{}));
+ };
+ const clearSession=()=>{
+   ['mailbox_token','mailbox_user'].forEach(key=>{localStorage.removeItem(key);sessionStorage.removeItem(key)});
+ };
+ // Migrate an active login created by login.html before this persistent storage update.
+ if(!localStorage.getItem('mailbox_token')&&sessionStorage.getItem('mailbox_token')){
+   localStorage.setItem('mailbox_token',sessionStorage.getItem('mailbox_token'));
+   const savedUser=sessionStorage.getItem('mailbox_user');
+   if(savedUser)localStorage.setItem('mailbox_user',savedUser);
+ }
  const requireLogin=()=>{if(!token())location.href='login.html'};
  return{request,token,user,setSession,clearSession,requireLogin,logout:()=>request('logout',{token:token()}),bootstrap:()=>request('bootstrap',{token:token()}),list:(folder,search='',page=1,pageSize=25,sort='date-desc')=>request('mailbox',{token:token(),folder,search,page,pageSize,sort}),get:mailId=>request('getMessage',{token:token(),mailId}),getThread:mailId=>request('getThread',{token:token(),mailId}),suggestRecipients:query=>request('suggestRecipients',{token:token(),query}),send:payload=>request('sendMessage',Object.assign({token:token()},payload)),draft:payload=>request('saveDraft',Object.assign({token:token()},payload)),update:payload=>request('updateMessage',Object.assign({token:token()},payload))}
 })();
@@ -147,7 +54,10 @@ let currentPage=1,pageSize=25,totalPages=1,currentMessages=[],selectedIds=new Se
 let searchTimer=null,silentTimer=null,loading=false,loadSequence=0,composeMode='new',originalMessage=null,originalAttachments=[],sending=false,attachmentFiles=[];
 const folderCache=new Map();
 const folderViews=new Map();
-const CACHE_TTL=45000;
+// Keep recently opened conversations in memory to avoid repeat Apps Script calls.
+const threadCache=new Map();
+const threadCacheTTL=120000;
+const CACHE_TTL=60000;
 let splitterDragging=false;
 const user=MailboxAPI.user()||{};
 $('avatar').textContent=initials(user.name||user.fullName,user.email||user.emailAddress);
@@ -749,7 +659,7 @@ const ComposerManager = (() => {
     if (confirmed) closeComposer(state.id);
   }
 
-  function closeComposer(id) {
+  function closeComposer(id, reason = 'cancel') {
     const state = composers.get(id);
     if (!state || state.sending) return;
     state.el.remove(); state.tab.remove(); composers.delete(id);
@@ -758,6 +668,7 @@ const ComposerManager = (() => {
       if (composers.size > 0) activateComposer(composers.keys().next().value);
       else switchView('folders');
     }
+    if(reason==='cancel' && state.mode==='new') showAlert('New message composition cancelled.', 'info', 2400);
   }
 
   function removeAll() { composers.forEach(s => { s.el.remove(); s.tab.remove(); }); composers.clear(); activeId = null; }
@@ -848,7 +759,7 @@ const ComposerManager = (() => {
       });
       setSendingState(state, false);
       if (state.draftMailId) { MailboxAPI.update({mailId:state.draftMailId,Folder:'TRASH',Is_Deleted:'YES'}).catch(()=>{}); invalidateFolderCache('DRAFT'); }
-      closeComposer(state.id);
+      closeComposer(state.id, 'sent');
       $('successReference').textContent = 'Reference: ' + (result.referenceNo || '—');
       $('successModal').classList.add('show');
       invalidateFolderCache('SENT'); invalidateFolderCache('INBOX');
@@ -880,7 +791,7 @@ const ComposerManager = (() => {
       el.querySelector('[data-role="status"]').textContent = 'Draft saved' + (result.referenceNo ? ' · ' + result.referenceNo : '');
       invalidateFolderCache('DRAFT'); folderViews.delete('DRAFT');
       if (currentFolder === 'DRAFT') load(1,{silent:true}).catch(()=>{});
-      if (options.closeAfter) { closeComposer(state.id); showAlert('Draft saved. Composer closed.', 'success', 2500); }
+      if (options.closeAfter) { closeComposer(state.id, 'saved'); showAlert('Draft saved. Composer closed.', 'success', 2500); }
       else { showAlert('Draft saved.', 'success', 1800); }
     } catch (err) { setSendingState(state, false); showAlert(err.message || 'Unable to save draft.', 'error'); }
   }
@@ -978,13 +889,41 @@ function mailDateGroup(value){
  const key=`month-${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
  return {key,label:d.toLocaleDateString([], {month:'long',year:'numeric'})};
 }
+
+
 function renderMailRow(m){
  const sent=currentFolder==='SENT';
  const status=sent?sentStatusMarkup(m):'';
  const sender=esc(m.senderName||m.senderEmail||m.to||'Unknown');
  const recipient=sent&&m.to?`<span class="mail-recipient">to ${esc(m.to)}</span>`:'';
- return `<div class="mail-row ${m.isRead?'':'unread'} ${m.mailId===selectedMailId?'selected':''}" data-id="${escAttr(m.mailId)}"><div class="mail-check"><input type="checkbox" data-select="${escAttr(m.mailId)}" ${selectedIds.has(m.mailId)?'checked':''}></div><div class="mail-main"><div class="mail-top"><div class="sender-line"><span class="sender">${sender}</span>${recipient}</div><div class="date">${esc(formatDate(m.date))}</div></div><div class="subject-line"><div class="subject">${esc(m.subject||'(No subject)')} ${m.hasAttachment?'<span class="attachment-dot"><i class="bi bi-paperclip"></i></span>':''}</div>${status}</div><div class="preview">${esc(m.body||'')}</div></div><div class="mail-row-end"><button class="star ${m.isStarred?'active':''}" data-star="${escAttr(m.mailId)}" title="${m.isStarred?'Unstar':'Star'}"><i class="bi ${m.isStarred?'bi-star-fill':'bi-star'}"></i></button>${Number(m.conversationCount||1)>1?`<span class="conversation-count" title="${Number(m.conversationCount)} messages in this conversation">${Number(m.conversationCount)}</span>`:''}</div></div>`;
+
+ return `<div class="mail-row ${m.isRead?'':'unread'} ${m.mailId===selectedMailId?'selected':''}" data-id="${escAttr(m.mailId)}">
+   <div class="mail-check">
+     <input type="checkbox" data-select="${escAttr(m.mailId)}" ${selectedIds.has(m.mailId)?'checked':''}>
+   </div>
+   <div class="mail-main">
+     <div class="mail-top">
+       <div class="sender-line">
+         <span class="sender">${sender}</span>${recipient}
+       </div>
+       <div class="date">${esc(formatDate(m.date))}</div>
+     </div>
+     <div class="subject-line">
+       ${m.hasAttachment?'<span class="attachment-dot"><i class="bi bi-paperclip"></i></span>':''}
+       <div class="subject">${esc(m.subject||'(No subject)')}</div>
+       ${status}
+     </div>
+     <div class="preview">${esc(m.body||'')}</div>
+   </div>
+   <div class="mail-row-end">
+     <button class="star ${m.isStarred?'active':''}" data-star="${escAttr(m.mailId)}" title="${m.isStarred?'Unstar':'Star'}">
+       <i class="bi ${m.isStarred?'bi-star-fill':'bi-star'}"></i>
+     </button>
+     ${Number(m.conversationCount||1)>1?`<span class="conversation-count" title="${Number(m.conversationCount)} messages in this conversation">${Number(m.conversationCount)}</span>`:''}
+   </div>
+ </div>`;
 }
+
 function renderList(){
  if(!currentMessages.length){
    const folderName = folders[currentFolder] || currentFolder;
@@ -1004,10 +943,37 @@ function renderList(){
      <div class="mail-date-group-title"><span>${esc(g.label)}</span><span class="mail-date-group-count">${g.messages.length}</span></div>
      <div class="mail-date-group-items">${g.messages.map(renderMailRow).join('')}</div>
    </section>`).join('');
- document.querySelectorAll('[data-select]').forEach(c=>c.addEventListener('click',e=>{e.stopPropagation();const id=c.dataset.select;if(c.checked)selectedIds.add(id);else selectedIds.delete(id);updateToolbar()}));
- document.querySelectorAll('[data-star]').forEach(b=>b.addEventListener('click',async e=>{e.stopPropagation();const id=b.dataset.star;const m=currentMessages.find(x=>x.mailId===id);if(!m)return;const old=!!m.isStarred;m.isStarred=!old;renderList();try{await MailboxAPI.update({mailId:id,Is_Starred:m.isStarred?'YES':'NO'});invalidateFolderCache();folderViews.clear();if(currentFolder==='STARRED'&&!m.isStarred){currentMessages=currentMessages.filter(x=>x.mailId!==id);renderList()}else{folderCache.delete(cacheKey(currentFolder,currentPage));}showAlert(m.isStarred?'Added to Starred.':'Removed from Starred.','success',1500)}catch(err){m.isStarred=old;renderList();showAlert(err.message||'Unable to update star.','error')}}));
- document.querySelectorAll('.mail-row').forEach(r=>r.addEventListener('click',e=>{if(e.target.closest('input,button'))return;if(currentFolder==='DRAFT')openDraft(r.dataset.id);else openMessage(r.dataset.id)}));
+
 }
+
+// One set of delegated handlers serves every rendered row; no per-row listener churn.
+$('mailList').addEventListener('change',e=>{
+ const checkbox=e.target.closest('[data-select]');
+ if(!checkbox)return;
+ const id=checkbox.dataset.select;
+ if(checkbox.checked)selectedIds.add(id);else selectedIds.delete(id);
+ updateToolbar();
+});
+$('mailList').addEventListener('click',async e=>{
+ const star=e.target.closest('[data-star]');
+ if(star){
+   e.stopPropagation();
+   const id=star.dataset.star,m=currentMessages.find(x=>x.mailId===id);
+   if(!m)return;
+   const old=!!m.isStarred;m.isStarred=!old;renderList();
+   try{
+     await MailboxAPI.update({mailId:id,Is_Starred:m.isStarred?'YES':'NO'});
+     invalidateFolderCache();folderViews.clear();threadCache.delete(String(id));
+     if(currentFolder==='STARRED'&&!m.isStarred){currentMessages=currentMessages.filter(x=>x.mailId!==id);renderList()}
+     else folderCache.delete(cacheKey(currentFolder,currentPage));
+     showAlert(m.isStarred?'Mail starred.':'Mail unstarred.','success',2200);
+   }catch(err){m.isStarred=old;renderList();showAlert(err.message||'Unable to update star.','error')}
+   return;
+ }
+ const row=e.target.closest('.mail-row');
+ if(!row||e.target.closest('input,button'))return;
+ if(currentFolder==='DRAFT')openDraft(row.dataset.id);else openMessage(row.dataset.id);
+});
 
 function updatePager(data){const total=Number(data.total||0);const start=total?((currentPage-1)*pageSize+1):0;const end=Math.min(currentPage*pageSize,total);$('rangeText').textContent=total?`${start}-${end} of ${total}`:'0 messages';$('pageText').textContent=`${currentPage} / ${totalPages}`;$('prevPage').disabled=!data.hasPrevious;$('nextPage').disabled=!data.hasNext;$('pageSize').value=String(pageSize)}
 function updateToolbar(){$('toolbar').classList.toggle('show',selectedIds.size>0)}
@@ -1018,33 +984,91 @@ async function applySelected(changes){
  try{
    // Serialize writes to avoid bursts of simultaneous Apps Script executions.
    for(const mailId of ids) await MailboxAPI.update(Object.assign({mailId},changes));
-   selectedIds.clear();invalidateFolderCache();folderViews.clear();
+   selectedIds.clear();invalidateFolderCache();folderViews.clear();threadCache.clear();
    if(changes.Folder || changes.Is_Deleted==='YES' || changes.Is_Spam==='YES') { currentMessages=currentMessages.filter(m=>!ids.includes(m.mailId));renderList(); } else { currentMessages.forEach(m=>{if(ids.includes(m.mailId)){if(changes.Is_Read!==undefined)m.isRead=changes.Is_Read==='YES';}});renderList(); }
    load(currentPage,{silent:true}).catch(()=>{});
+   const target=changes.Folder==='ARCHIVE'?'Archive':changes.Folder==='SPAM'?'Spam':changes.Folder==='TRASH'?'Trash':'';
+   const action=target?`${ids.length} message${ids.length===1?'':'s'} moved to ${target}.`:changes.Is_Read==='YES'?'Selected messages marked as read.':changes.Is_Read==='NO'?'Selected messages marked as unread.':'Selected messages updated.';
+   showAlert(action,'success',2600);
  }catch(err){showAlert(err.message||'Unable to update messages.','error')}
 }
 
+function setThreadSubject(subject){
+ const el=$('readSubject');
+ const value=String(subject||'(No subject)');
+ el.textContent=value;
+ el.title=value;
+ el.classList.remove('is-expanded');
+ el.setAttribute('aria-label',value);
+}
 function paintReadHeader(m){
- $('readSubject').textContent=m.subject||'(No subject)';
+ setThreadSubject(m.subject);
  $('threadCount').textContent=threadMessages.length?`${threadMessages.length} message${threadMessages.length===1?'':'s'}`:'';
 }
 
 async function openMessage(id){
  const row=currentMessages.find(x=>x.mailId===id);if(!row)return;
- selectedMailId=id;selectedThreadMailId=id;selectedMessage=row;selectedAttachments=[];threadMessages=[];$('foldersWorkspace').classList.remove('reading-hidden');
+ selectedMailId=id;selectedThreadMailId=id;selectedMessage=row;selectedAttachments=[];threadMessages=[];
+ $('foldersWorkspace').classList.remove('reading-hidden');
  renderList();$('readEmpty').classList.add('hidden');$('readContent').classList.remove('hidden');$('readPane').classList.add('mobile-show');
- $('readSubject').textContent=row.subject||'(No subject)';$('threadCount').textContent='';
+ setThreadSubject(row.subject);$('threadCount').textContent='';
  $('threadMessages').innerHTML='<div class="loading-inline"><span class="panel-spinner" aria-label="Loading"></span></div>';
  if(!row.isRead){row.isRead=true;renderList();}
+ const cached=threadCache.get(String(id));
+ if(cached&&Date.now()-cached.time<threadCacheTTL){
+   threadMessages=cached.messages;
+   const chosen=threadMessages.find(x=>String(x.message&&x.message.mailId)===String(id))||threadMessages[threadMessages.length-1];
+   if(chosen){selectedMessage=chosen.message;selectedAttachments=chosen.attachments||[];paintReadHeader(selectedMessage);renderThread();}
+   // Refresh profile photos in parallel; never hold the conversation display for them.
+   loadThreadProfileImages().then(()=>{if(selectedMailId===id)renderThread()});
+   return;
+ }
  try{
+   // Start the optional photo lookup alongside the thread request, not after it.
+   const photosPromise=loadThreadProfileImages();
    const result=await MailboxAPI.getThread(id);
    if(selectedMailId!==id)return;
    threadMessages=Array.isArray(result.messages)?result.messages:[];
    if(!threadMessages.length)throw new Error('No messages found in this conversation.');
-   const chosen=threadMessages.find(x=>x.message.mailId===id)||threadMessages[threadMessages.length-1];
+   threadCache.set(String(id),{messages:threadMessages,time:Date.now()});
+   const chosen=threadMessages.find(x=>String(x.message&&x.message.mailId)===String(id))||threadMessages[threadMessages.length-1];
    selectedMessage=chosen.message;selectedAttachments=chosen.attachments||[];
    paintReadHeader(selectedMessage);renderThread();
- }catch(err){$('threadMessages').innerHTML=`<div class="thread-empty">${esc(err.message||'Unable to load conversation.')}</div>`;}
+   photosPromise.then(()=>{if(selectedMailId===id)renderThread()});
+ }catch(err){
+   if(selectedMailId===id)$('threadMessages').innerHTML=`<div class="thread-empty">${esc(err.message||'Unable to load conversation.')}</div>`;
+ }
+}
+
+// Profile photos for people in a conversation, indexed by their email address.
+const threadProfileImageMap=new Map();
+let threadProfileImageMapLoaded=false;
+async function loadThreadProfileImages(){
+ if(threadProfileImageMapLoaded)return;
+ try{
+   // Dedicated endpoint returns the Users-sheet photo URL for every active account.
+   const result=await MailboxAPI.request('listThreadProfileImages',{token:MailboxAPI.token()});
+   const candidates=[result&&result.users,result&&result.items,result&&result.data&&result.data.users,result&&result.data&&result.data.items];
+   const users=candidates.find(Array.isArray)||[];
+   users.forEach(u=>{
+     const email=String(u.email||u.emailAddress||u.Email_Address||u.Email||u.mailId||'').trim().toLowerCase();
+     const photo=String(u.profileImageUrl||u.Profile_Image_URL||u.profile_image_url||u.avatarUrl||u.photoUrl||'').trim();
+     if(email&&photo)threadProfileImageMap.set(email,photo);
+   });
+   threadProfileImageMapLoaded=true;
+ }catch(err){
+   // Retry on the next thread refresh if the endpoint is temporarily unavailable.
+   threadProfileImageMapLoaded=false;
+   console.warn('Unable to load thread profile photos:',err);
+ }
+}
+
+function threadAvatarMarkup(m){
+ const senderEmail=String(m.senderEmail||m.sender_email||m.fromEmail||m.from||m.senderAddress||(m.sender&&(m.sender.email||m.sender.emailAddress||m.sender.Email_Address))||'').trim().toLowerCase();
+ const directPhoto=m.senderProfileImageUrl||m.senderImageUrl||m.senderPhotoUrl||m.profileImageUrl||m.senderAvatarUrl||m.avatarUrl||m.photoUrl||m.Profile_Image_URL||(m.sender&&(m.sender.profileImageUrl||m.sender.Profile_Image_URL||m.sender.avatarUrl));
+ const photo=String(directPhoto||threadProfileImageMap.get(senderEmail)||'').trim();
+ const fallback=esc(initials(m.senderName||m.fromName||m.sender_name,senderEmail));
+ return `<div class="thread-avatar${photo?' has-photo':''}"><span>${fallback}</span>${photo?`<img src="${escAttr(photo)}" alt="" loading="eager" referrerpolicy="no-referrer" onerror="this.style.display='none';this.parentElement.classList.remove('has-photo')">`:''}</div>`;
 }
 
 function renderThread(){
@@ -1061,7 +1085,7 @@ function renderThread(){
    const body=String(m.bodyType||'').toUpperCase()==='HTML'?(m.body||''):`<div class="thread-plain-body">${esc(m.body||'')}</div>`;
    const attachments=files.map(a=>`<a class="attachment" href="${escAttr(a.url||'#')}" target="_blank" rel="noopener noreferrer" download><span><i class="bi bi-paperclip"></i></span><span title="${escAttr(a.fileName)}">${esc(a.fileName||'Attachment')}</span><small>${esc(formatSize(a.size))}</small></a>`).join('');
    return `<article class="thread-message ${expanded?'expanded':''} ${selected?'selected':''}" data-thread-mail="${mid}">
-     <div class="thread-message-head" role="button" tabindex="0" aria-expanded="${expanded}" data-thread-toggle="${mid}"><div class="thread-avatar">${esc(initials(m.senderName,m.senderEmail))}</div><div class="thread-person"><div class="thread-person-name">${esc(m.senderName||m.senderEmail||'Unknown sender')}</div><div class="thread-person-email">${esc(m.senderEmail||'')}</div><div class="thread-recipient-line"><span class="thread-recipients">${recipients||'Recipients not available'}</span><span class="thread-folder"><i class="bi bi-folder2"></i> ${esc(folderLabel)}</span></div></div><time class="thread-date">${esc(formatDate(m.date)||m.date||'')}</time></div>
+     <div class="thread-message-head" role="button" tabindex="0" aria-expanded="${expanded}" data-thread-toggle="${mid}">${threadAvatarMarkup(m)}<div class="thread-person"><div class="thread-person-name">${esc(m.senderName||m.senderEmail||'Unknown sender')}</div><div class="thread-person-email">${esc(m.senderEmail||'')}</div><div class="thread-recipient-line"><span class="thread-recipients">${recipients||'Recipients not available'}</span><span class="thread-folder"><i class="bi bi-folder2"></i> ${esc(folderLabel)}</span></div></div><time class="thread-date">${esc(formatDate(m.date)||m.date||'')}</time></div>
      <div class="thread-message-body">${body}</div>
      ${attachments?`<div class="thread-attachments">${attachments}</div>`:''}
      <div class="thread-message-actions">
@@ -1095,6 +1119,7 @@ async function refreshThread(){
  const result=await MailboxAPI.getThread(id);
  if(selectedMailId!==id)return;
  threadMessages=Array.isArray(result.messages)?result.messages:[];
+ await loadThreadProfileImages();
  const chosen=threadMessages.find(x=>x.message.mailId===id)||threadMessages[threadMessages.length-1];
  if(!chosen){closeRead();return;}
  selectedMessage=chosen.message;selectedAttachments=chosen.attachments||[];paintReadHeader(selectedMessage);renderThread();
@@ -1122,10 +1147,12 @@ async function threadMessageAction(mailId,action){
    if(['archive','spam','trash'].includes(action)) { threadMessages=threadMessages.filter(x=>String(x.message.mailId)!==String(mailId)); }
    if(action==='archive'||action==='spam'||action==='trash') { closeRead(); currentMessages=currentMessages.filter(x=>String(x.mailId)!==String(mailId));renderList(); }
    await MailboxAPI.update(Object.assign({mailId},changes));
+   threadCache.delete(String(mailId));
    invalidateFolderCache();folderViews.clear();
    load(currentPage,{silent:true}).catch(()=>{});
    if(!['archive','spam','trash'].includes(action)) await refreshThread();
-   showAlert(action==='star'?(m.isStarred?'Added to Starred.':'Removed from Starred.'):action==='read'?'Read status updated.': 'Message moved.', 'success', 1400);
+   const destination={archive:'Archive',spam:'Spam',trash:'Trash'}[action];
+   showAlert(action==='star'?(m.isStarred?'Thread message starred.':'Thread message unstarred.'):action==='read'?'Thread message read status updated.':`Message moved to ${destination}.`, 'success', 2600);
  }catch(err){showAlert(err.message||'Unable to update message.','error');}
 }
 
@@ -1134,6 +1161,30 @@ $('threadMessages').addEventListener('click',e=>{
  const head=e.target.closest('[data-thread-toggle]');if(head){const card=head.closest('.thread-message');selectedThreadMailId=String(card.dataset.threadMail||'');$('threadMessages').querySelectorAll('.thread-message').forEach(node=>node.classList.toggle('selected',node===card));const expanded=card.classList.toggle('expanded');head.setAttribute('aria-expanded',String(expanded));}
 });
 $('threadMessages').addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('[data-thread-toggle]')){e.preventDefault();const card=e.target.closest('.thread-message');selectedThreadMailId=String(card.dataset.threadMail||'');$('threadMessages').querySelectorAll('.thread-message').forEach(node=>node.classList.toggle('selected',node===card));const expanded=card.classList.toggle('expanded');e.target.setAttribute('aria-expanded',String(expanded));}});
+
+function openThreadPopup(printAfterOpen=false){
+ const subject=String(selectedMessage?.subject||$('readSubject').textContent||'(No subject)');
+ const threadHtml=$('threadMessages').innerHTML;
+ const popup=window.open('','mailbox-thread-'+Date.now(),'width=920,height=760,resizable=yes,scrollbars=yes');
+ if(!popup){showAlert('Your browser blocked the thread window. Allow pop-ups for this site and try again.','warning');return;}
+ const safeTitle=esc(subject);
+ popup.document.open();
+ popup.document.write(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${safeTitle}</title><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"><link rel="stylesheet" href="mailbox-common.css"><style>
+ *{box-sizing:border-box}body{margin:0;padding:28px;background:#f3f6fa;color:#172033;font-family:Inter,Segoe UI,Arial,sans-serif}
+ .print-shell{max-width:900px;margin:0 auto;background:#fff;padding:24px;border-radius:12px}
+ h1{font-size:22px;margin:0 0 20px;padding-bottom:16px;border-bottom:1px solid #ddd;overflow-wrap:anywhere}
+ .thread-messages{overflow:visible!important}.thread-message{break-inside:avoid;page-break-inside:avoid;margin-bottom:14px!important;border:1px solid #ddd!important;border-radius:8px!important}
+ .thread-message-body{display:block!important}.thread-message-actions{display:none!important}
+ .thread-message-head{break-inside:avoid}.thread-attachments a{color:#1457b8}
+ @media print{body{padding:0;background:#fff}.print-shell{max-width:none;padding:0;border:0;border-radius:0}.thread-message{box-shadow:none!important}.thread-message-body{display:block!important}}
+ </style></head><body><main class="print-shell"><h1>${safeTitle}</h1><section class="thread-messages">${threadHtml}</section></main></body></html>`);
+ popup.document.close();
+ if(printAfterOpen){
+   popup.addEventListener('load',()=>{popup.focus();popup.print();},{once:true});
+   setTimeout(()=>{try{popup.focus();popup.print()}catch(_){}},700);
+ }
+}
+
 function closeRead(){selectedMailId='';selectedThreadMailId='';selectedMessage=null;selectedAttachments=[];threadMessages=[];$('readContent').classList.add('hidden');$('readEmpty').classList.remove('hidden');$('readPane').classList.remove('mobile-show');$('foldersWorkspace').classList.add('reading-hidden');renderList()}
 
 /* =========================================================
@@ -1143,14 +1194,20 @@ $('composeBtn').addEventListener('click',()=>ComposerManager.createComposer('new
 $('successOk').addEventListener('click',()=>{$('successModal').classList.remove('show');});
 $('backBtn').addEventListener('click',closeRead);
 $('closeReadBtn').addEventListener('click',closeRead);
+$('openThreadWindowBtn').addEventListener('click',()=>openThreadPopup(false));
+$('printThreadBtn').addEventListener('click',()=>openThreadPopup(true));
 
 /* sort dropdown — sync with saved preference */
+$('readSubject').addEventListener('click',()=>{$('readSubject').classList.toggle('is-expanded')});
+
 $('sortSelect').value = currentSort;
 $('sortSelect').addEventListener('change',()=>{
   currentSort = $('sortSelect').value;
   localStorage.setItem('mailbox_sort', currentSort);
   folderCache.clear();folderViews.clear();currentPage=1;
   load(1);
+  const labels={'date-desc':'Newest first','date-asc':'Oldest first','sender-asc':'Sender A to Z','sender-desc':'Sender Z to A','subject-asc':'Subject A to Z','subject-desc':'Subject Z to A'};
+  showAlert(`Mail list sorted: ${labels[currentSort]||currentSort}.`,'info',2200);
 });
 
 const prefetchTimers=new Map();
@@ -1188,7 +1245,8 @@ $('markReadBtn').addEventListener('click',()=>applySelected({Is_Read:'YES'}));$(
   });
   if (ok) applySelected({Folder:'TRASH',Is_Deleted:'YES'});
 });
-$('refreshBtn').addEventListener('click',()=>load(currentPage));$('refreshListBtn').addEventListener('click',()=>load(currentPage));
+$('refreshBtn').addEventListener('click',()=>load(currentPage).then(()=>showAlert('Mailbox refreshed.','success',1800)));
+$('refreshListBtn').addEventListener('click',()=>load(currentPage).then(()=>showAlert('Mail list refreshed.','success',1800)));
 function runSearch(){clearTimeout(searchTimer);searchTimer=setTimeout(()=>load(1),260);$('clearSearch').style.display=$('searchInput').value?'block':'none'}
 $('searchInput').addEventListener('input',runSearch);$('searchInput').addEventListener('keydown',e=>{if(e.key==='Escape'){$('searchInput').value='';runSearch()}});$('clearSearch').addEventListener('click',()=>{$('searchInput').value='';runSearch();$('searchInput').focus()});
 $('logoutBtn').addEventListener('click',async()=>{
@@ -1272,25 +1330,3 @@ updateFolderUI();
 switchView('folders');
 load(1).finally(()=>startSilent());
 })();
-</script>
-<script>
-/* Profile drawer, theme, editor tools */
-(()=>{
- const $=id=>document.getElementById(id);
- const user=(()=>{try{return JSON.parse(sessionStorage.getItem('mailbox_user')||'{}')}catch(e){return {}}})();
- const av=$('avatar');if(!av)return;
- const name=user.name||user.fullName||user.email||'User';
- $('drawerName').textContent=name;
- $('drawerEmail').textContent=user.email||user.emailAddress||'';
- $('drawerRole').textContent=user.designation||user.role||'Mailbox User';
- $('drawerAvatar').textContent=av.textContent;
- const drawer=$('profileDrawer');
- av.addEventListener('click',()=>{drawer.classList.add('open');drawer.setAttribute('aria-hidden','false');av.setAttribute('aria-expanded','true')});
- $('closeProfile').addEventListener('click',()=>{drawer.classList.remove('open');drawer.setAttribute('aria-hidden','true');av.setAttribute('aria-expanded','false')});
- const applyTheme=c=>{if(!/^#[0-9a-f]{6}$/i.test(String(c||'')))return;document.documentElement.style.setProperty('--mailbox-accent',c);document.documentElement.style.setProperty('--primary',c);document.documentElement.style.setProperty('--accent',c);document.querySelectorAll('[data-theme]').forEach(b=>b.classList.toggle('selected',b.dataset.theme.toLowerCase()===c.toLowerCase()));};
- const savedTheme=localStorage.getItem('mailbox_theme_color')||'#2563eb';applyTheme(savedTheme);
- document.querySelectorAll('[data-theme]').forEach(b=>b.addEventListener('click',()=>{const c=b.dataset.theme;applyTheme(c);localStorage.setItem('mailbox_theme_color',c)}));
-})();
-</script>
-</body>
-</html>
