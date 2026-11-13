@@ -1,5 +1,5 @@
 
-window.MAILBOX_API_URL=window.MAILBOX_API_URL||'https://script.google.com/macros/s/AKfycbyfL6s-1X6JCfhiMiYOuvLmT6EG06s0Yk-cbMgygk1K5awNSk3Dkz2cehNVgJDXvIO1/exec';
+window.MAILBOX_API_URL=window.MAILBOX_API_URL||'https://script.google.com/macros/s/AKfycbzAoHcLJCRXsFnsj8WXxJGIGsfTI4HPYKPrsr4iS6mzbPqi0SVMx3IWDosWZtFFconD/exec';
 const MailboxAPI=(()=>{
  const inFlightRequests=new Map();
  const READ_ACTIONS=new Set(['mailbox','getMessage','getThread','bootstrap','listMailboxUsers','listThreadProfileImages','suggestRecipients','getProfile']);
