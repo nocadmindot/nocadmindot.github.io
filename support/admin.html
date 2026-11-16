@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Help Portal | Admin</title>
+<style>
+:root{--blue:#1769aa;--blue2:#e7f1fb;--ink:#20262c;--muted:#69737d;--line:#e1e6eb;--bg:#f5f7fa;--red:#c73535;--green:#16834a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 Arial,Helvetica,sans-serif}
+button,input,select{font:inherit}
+button{cursor:pointer}
+.top{height:64px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:5}
+.brand{font-size:18px;font-weight:750;color:var(--blue);letter-spacing:-.3px}
+.brand small{display:block;font-size:10px;color:var(--muted);font-weight:400;letter-spacing:.3px}
+.top-right{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:12px}
+.wrap{max-width:1440px;margin:26px auto;padding:0 22px}
+.page-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:20px}
+h1{font-size:26px;margin:0 0 4px;letter-spacing:-.6px}
+.sub{color:var(--muted);margin:0}
+.btn{border:1px solid var(--line);background:#fff;color:#27313a;padding:9px 14px;border-radius:5px;font-weight:650}
+.btn:hover{border-color:#aab9c8;background:#fafcff}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.primary:hover{background:#10558e}
+.btn.danger{color:var(--red);border-color:#e7caca}
+.btn.small{padding:6px 9px;font-size:12px}
+.grid{display:grid;grid-template-columns:minmax(320px,390px) minmax(0,1fr);gap:20px;align-items:start}
+.card{background:#fff;border:1px solid var(--line);border-radius:9px;box-shadow:0 2px 8px rgba(20,35,50,.035)}
+.card-head{padding:17px 19px;border-bottom:1px solid var(--line);font-weight:750;font-size:15px}
+.card-body{padding:18px 19px}
+.field{margin-bottom:14px}
+label{display:block;margin-bottom:5px;font-weight:650;font-size:12px;color:#424b54}
+input,select{width:100%;height:39px;padding:8px 10px;border:1px solid #d7dde3;border-radius:5px;background:#fff;color:var(--ink);outline:none}
+input:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(23,105,170,.1)}
+input[readonly]{background:#f2f4f6;color:#68727b}
+.hint{font-size:11px;color:#7a838c;margin-top:4px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.three{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.checkline{display:flex;align-items:center;gap:9px;margin:4px 0 16px;color:#46515b}
+.checkline input{width:16px;height:16px}
+.checkline label{margin:0;font-size:13px}
+.form-actions{display:flex;gap:9px;flex-wrap:wrap;padding-top:5px}
+.notice{display:none;padding:10px 12px;border-radius:5px;margin:0 0 14px;font-size:13px}
+.notice.show{display:block}
+.notice.ok{background:#e9f7ef;color:#12663a}
+.notice.err{background:#fff0ef;color:#a32727}
+.table-tools{display:flex;align-items:center;gap:10px;padding:14px 17px;border-bottom:1px solid var(--line)}
+.table-tools input{max-width:340px}
+.count{margin-left:auto;color:var(--muted);font-size:12px;white-space:nowrap}
+.table-wrap{overflow:auto}
+table{border-collapse:collapse;width:100%;min-width:760px}
+th,td{padding:11px 13px;border-bottom:1px solid #edf0f2;text-align:left;vertical-align:middle}
+th{background:#fafbfc;color:#68727b;font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+td{font-size:13px}
+td strong{display:block;font-size:13px}
+.secondary{display:block;color:#818a93;font-size:11px;margin-top:2px}
+.pill{display:inline-block;border-radius:20px;padding:3px 8px;font-size:10px;font-weight:750;background:#e9f7ef;color:#147444}
+.pill.off{background:#f0f1f3;color:#737b83}
+.row-actions{display:flex;gap:6px}
+.empty{padding:35px;text-align:center;color:var(--muted)}
+.login{max-width:420px;margin:9vh auto;padding:26px}
+.login h1{font-size:23px}
+.login p{color:var(--muted)}
+.hidden{display:none!important}
+.footer-note{font-size:11px;color:#7a838c;margin-top:15px;line-height:1.55}
+@media(max-width:900px){.grid{grid-template-columns:1fr}.wrap{padding:0 13px}.top{padding:0 15px}.page-head{align-items:center}}
+@media(max-width:520px){.two,.three{grid-template-columns:1fr 1fr}.page-head{display:block}.page-head .btn{margin-top:12px}.login{margin:5vh 13px}.top-right{font-size:10px}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">HELP CENTRE <small>ADMINISTRATION PANEL</small></div>
+  <div class="top-right"><span id="connectionLabel">Not connected</span><button class="btn small" id="changeKeyBtn">Change key</button></div>
+</header>
+
+<section class="card login" id="loginPanel">
+  <h1>Admin sign in</h1>
+  <p>Enter the Help Portal administrator key to manage topics in the Google Sheet.</p>
+  <div class="notice err" id="loginNotice"></div>
+  <div class="field">
+    <label for="apiUrlInput">Apps Script Web App URL</label>
+    <input id="apiUrlInput" type="url" placeholder="https://script.google.com/macros/s/.../exec">
+    <div class="hint">Use the same deployed API URL configured in your public index.html.</div>
+  </div>
+  <div class="field">
+    <label for="adminKeyInput">Admin key</label>
+    <input id="adminKeyInput" type="password" autocomplete="current-password" placeholder="Enter administrator key">
+  </div>
+  <button class="btn primary" id="connectBtn">Connect to Help Database</button>
+  <div class="footer-note">The key is held in this page's memory only and is not saved in local storage.</div>
+</section>
+
+<main class="wrap hidden" id="appPanel">
+  <div class="page-head">
+    <div><h1>Help Topics</h1><p class="sub">Create, edit, order and publish help documentation.</p></div>
+    <button class="btn primary" id="newTopicBtn">＋ Add new topic</button>
+  </div>
+
+  <div class="grid">
+    <section class="card" id="editorCard">
+      <div class="card-head" id="editorHeading">Add a new topic</div>
+      <div class="card-body">
+        <div class="notice" id="formNotice"></div>
+        <form id="topicForm">
+          <div class="field">
+            <label for="topicId">Topic ID *</label>
+            <input id="topicId" required pattern="[A-Za-z0-9_-]{2,80}" maxlength="80" placeholder="e.g. huge-attachments">
+            <div class="hint">Unique ID; use lowercase letters, numbers and hyphens. Cannot be changed after creation.</div>
+          </div>
+          <div class="field">
+            <label for="mainMenu">Main menu *</label>
+            <input id="mainMenu" list="mainMenuOptions" required placeholder="e.g. Sending emails">
+            <datalist id="mainMenuOptions"></datalist>
+          </div>
+          <div class="field">
+            <label for="subMenu">Submenu</label>
+            <input id="subMenu" list="subMenuOptions" placeholder="e.g. Attachments (optional)">
+            <datalist id="subMenuOptions"></datalist>
+          </div>
+          <div class="field">
+            <label for="topicTitle">Topic title *</label>
+            <input id="topicTitle" required placeholder="e.g. Huge Attachments">
+          </div>
+          <div class="three">
+            <div class="field"><label for="mainOrder">Main order *</label><input id="mainOrder" type="number" min="0" step="1" value="1" required></div>
+            <div class="field"><label for="subOrder">Sub order *</label><input id="subOrder" type="number" min="0" step="1" value="1" required></div>
+            <div class="field"><label for="topicOrder">Topic order *</label><input id="topicOrder" type="number" min="0" step="1" value="1" required></div>
+          </div>
+          <div class="two">
+            <div class="field">
+              <label for="contentType">Content type *</label>
+              <select id="contentType" required><option value="HTML">HTML</option><option value="PDF">PDF</option><option value="DOCX">DOCX</option></select>
+            </div>
+            <div class="field">
+              <label for="fileName">File name / path *</label>
+              <input id="fileName" required placeholder="huge-attachments.html">
+              <div class="hint">File must exist inside your GitHub help/ directory.</div>
+            </div>
+          </div>
+          <div class="checkline"><input id="published" type="checkbox" checked><label for="published">Published (visible on public Help Portal)</label></div>
+          <div class="form-actions">
+            <button class="btn primary" type="submit" id="saveBtn">Save topic</button>
+            <button class="btn" type="button" id="resetBtn">Clear form</button>
+          </div>
+        </form>
+        <p class="footer-note">Adding a topic only updates the spreadsheet. Upload the matching HTML/PDF/DOCX file separately into the GitHub help/ directory.</p>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">Existing topics</div>
+      <div class="table-tools">
+        <input id="tableSearch" type="search" placeholder="Search topics, menus or filenames...">
+        <span class="count" id="topicCount">0 topics</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Topic</th><th>Menu / Submenu</th><th>File</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="topicsTable"><tr><td colspan="5" class="empty">Connect to load topics.</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script>
+/* =========================================================
+   ADMIN PANEL CONFIGURATION
+   ========================================================= */
+let API_URL = "";
+let ADMIN_KEY = "";
+let topics = [];
+let editingId = null;
+
+const $ = s => document.querySelector(s);
+
+function jsonp(params) {
+  return new Promise((resolve, reject) => {
+    const callback = "__admin_cb_" + Date.now() + "_" + Math.random().toString(36).slice(2);
+    const script = document.createElement("script");
+    let done = false;
+    const timer = setTimeout(() => finish(new Error("API request timed out.")), 20000);
+
+    function finish(error, data) {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      delete window[callback];
+      script.remove();
+      error ? reject(error) : resolve(data);
+    }
+
+    window[callback] = data => finish(null, data);
+    script.onerror = () => finish(new Error("Unable to reach the Apps Script API."));
+    const query = new URLSearchParams({...params, callback});
+    script.src = API_URL + "?" + query.toString();
+    document.head.appendChild(script);
+  });
+}
+
+function showNotice(element, message, type) {
+  element.textContent = message;
+  element.className = "notice show " + type;
+}
+function clearNotice(element) {
+  element.textContent = "";
+  element.className = "notice";
+}
+function esc(value) {
+  return String(value ?? "").replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  })[c]);
+}
+
+async function connect() {
+  API_URL = $("#apiUrlInput").value.trim();
+  ADMIN_KEY = $("#adminKeyInput").value;
+
+  if (!/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec/.test(API_URL)) {
+    showNotice($("#loginNotice"), "Enter a valid Apps Script Web App /exec URL.", "err");
+    return;
+  }
+  if (!ADMIN_KEY) {
+    showNotice($("#loginNotice"), "Enter the admin key.", "err");
+    return;
+  }
+
+  $("#connectBtn").disabled = true;
+  $("#connectBtn").textContent = "Connecting...";
+  clearNotice($("#loginNotice"));
+
+  try {
+    await refreshTopics();
+    $("#loginPanel").classList.add("hidden");
+    $("#appPanel").classList.remove("hidden");
+    $("#connectionLabel").textContent = "Connected";
+  } catch (error) {
+    showNotice($("#loginNotice"), error.message, "err");
+  } finally {
+    $("#connectBtn").disabled = false;
+    $("#connectBtn").textContent = "Connect to Help Database";
+  }
+}
+
+async function refreshTopics() {
+  const response = await jsonp({action:"adminList", key:ADMIN_KEY});
+  if (!response.success) throw new Error(response.message || "Could not load topics.");
+  topics = response.topics || [];
+  renderTable();
+  populateSuggestions();
+}
+
+function renderTable() {
+  const query = $("#tableSearch").value.trim().toLowerCase();
+  const filtered = topics.filter(t =>
+    [t.topicId,t.topicTitle,t.mainMenu,t.subMenu,t.fileName,t.contentType]
+      .join(" ").toLowerCase().includes(query)
+  );
+
+  $("#topicCount").textContent = `${filtered.length} of ${topics.length} topics`;
+  const tbody = $("#topicsTable");
+
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="5" class="empty">No matching topics.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(t => `
+    <tr>
+      <td><strong>${esc(t.topicTitle)}</strong><span class="secondary">${esc(t.topicId)}</span></td>
+      <td>${esc(t.mainMenu)}<span class="secondary">${esc(t.subMenu || "No submenu")}</span></td>
+      <td>${esc(t.fileName)}<span class="secondary">${esc(t.contentType)}</span></td>
+      <td><span class="pill ${t.published ? "" : "off"}">${t.published ? "PUBLISHED" : "UNPUBLISHED"}</span></td>
+      <td><div class="row-actions">
+        <button class="btn small" data-edit="${esc(t.topicId)}">Edit</button>
+        ${t.published
+          ? `<button class="btn small danger" data-unpublish="${esc(t.topicId)}">Unpublish</button>`
+          : `<button class="btn small" data-publish-edit="${esc(t.topicId)}">Edit / Publish</button>`}
+      </div></td>
+    </tr>
+  `).join("");
+
+  tbody.querySelectorAll("[data-edit],[data-publish-edit]").forEach(button => {
+    button.addEventListener("click", () => editTopic(button.dataset.edit || button.dataset.publishEdit));
+  });
+  tbody.querySelectorAll("[data-unpublish]").forEach(button => {
+    button.addEventListener("click", () => unpublishTopic(button.dataset.unpublish));
+  });
+}
+
+function populateSuggestions() {
+  const mains = [...new Set(topics.map(t => t.mainMenu).filter(Boolean))].sort();
+  $("#mainMenuOptions").innerHTML = mains.map(v => `<option value="${esc(v)}"></option>`).join("");
+
+  const subs = [...new Set(topics.map(t => t.subMenu).filter(Boolean))].sort();
+  $("#subMenuOptions").innerHTML = subs.map(v => `<option value="${esc(v)}"></option>`).join("");
+}
+
+function resetForm() {
+  editingId = null;
+  $("#topicForm").reset();
+  $("#topicId").readOnly = false;
+  $("#mainOrder").value = 1;
+  $("#subOrder").value = 1;
+  $("#topicOrder").value = 1;
+  $("#published").checked = true;
+  $("#editorHeading").textContent = "Add a new topic";
+  $("#saveBtn").textContent = "Save topic";
+  clearNotice($("#formNotice"));
+}
+
+function editTopic(id) {
+  const t = topics.find(item => item.topicId === id);
+  if (!t) return;
+
+  editingId = id;
+  $("#topicId").value = t.topicId;
+  $("#topicId").readOnly = true;
+  $("#mainMenu").value = t.mainMenu;
+  $("#subMenu").value = t.subMenu || "";
+  $("#topicTitle").value = t.topicTitle;
+  $("#mainOrder").value = t.mainOrder;
+  $("#subOrder").value = t.subOrder;
+  $("#topicOrder").value = t.topicOrder;
+  $("#contentType").value = t.contentType;
+  $("#fileName").value = t.fileName;
+  $("#published").checked = !!t.published;
+  $("#editorHeading").textContent = "Edit topic";
+  $("#saveBtn").textContent = "Update topic";
+  clearNotice($("#formNotice"));
+  $("#editorCard").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+async function saveTopic(event) {
+  event.preventDefault();
+  const data = {
+    originalId: editingId || "",
+    topicId: $("#topicId").value.trim(),
+    mainMenu: $("#mainMenu").value.trim(),
+    subMenu: $("#subMenu").value.trim(),
+    topicTitle: $("#topicTitle").value.trim(),
+    mainOrder: Number($("#mainOrder").value),
+    subOrder: Number($("#subOrder").value),
+    topicOrder: Number($("#topicOrder").value),
+    contentType: $("#contentType").value,
+    fileName: $("#fileName").value.trim(),
+    published: $("#published").checked
+  };
+
+  $("#saveBtn").disabled = true;
+  $("#saveBtn").textContent = "Saving...";
+
+  try {
+    const response = await jsonp({
+      action:"adminSave",
+      key:ADMIN_KEY,
+      data:JSON.stringify(data)
+    });
+
+    if (!response.success) throw new Error(response.message || "Save failed.");
+
+    showNotice($("#formNotice"), response.message, "ok");
+    await refreshTopics();
+    resetForm();
+    showNotice($("#formNotice"), response.message, "ok");
+
+  } catch (error) {
+    showNotice($("#formNotice"), error.message, "err");
+  } finally {
+    $("#saveBtn").disabled = false;
+    $("#saveBtn").textContent = editingId ? "Update topic" : "Save topic";
+  }
+}
+
+async function unpublishTopic(id) {
+  const topic = topics.find(t => t.topicId === id);
+  if (!topic) return;
+
+  if (!confirm(`Unpublish "${topic.topicTitle}"?\n\nIt will disappear from the public Help Portal, but its row will remain in Google Sheets.`)) return;
+
+  try {
+    const response = await jsonp({action:"adminUnpublish",key:ADMIN_KEY,id});
+    if (!response.success) throw new Error(response.message || "Unpublish failed.");
+    await refreshTopics();
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+$("#connectBtn").addEventListener("click", connect);
+$("#adminKeyInput").addEventListener("keydown", e => { if (e.key === "Enter") connect(); });
+$("#topicForm").addEventListener("submit", saveTopic);
+$("#resetBtn").addEventListener("click", resetForm);
+$("#newTopicBtn").addEventListener("click", () => {
+  resetForm();
+  $("#editorCard").scrollIntoView({behavior:"smooth",block:"start"});
+});
+$("#tableSearch").addEventListener("input", renderTable);
+$("#changeKeyBtn").addEventListener("click", () => {
+  ADMIN_KEY = "";
+  topics = [];
+  $("#adminKeyInput").value = "";
+  $("#appPanel").classList.add("hidden");
+  $("#loginPanel").classList.remove("hidden");
+  $("#connectionLabel").textContent = "Not connected";
+});
+</script>
+</body>
+</html>
