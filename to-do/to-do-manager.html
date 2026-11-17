@@ -30,13 +30,13 @@
 <div class="app-card">
     <!-- Tabs -->
     <div class="tab-header">
-        <button class="tab-btn active" id="tabAddBtn"><i class="bi bi-plus-circle"></i> Add Task</button>
-        <button class="tab-btn" id="tabListBtn"><i class="bi bi-table"></i> Manage Tasks</button>
+        <button class="tab-btn active" id="tabListBtn"><i class="bi bi-table"></i> Manage Tasks</button>
+        <button class="tab-btn" id="tabAddBtn"><i class="bi bi-plus-circle"></i> Add Task</button>
         <button class="tab-btn" id="tabAlterBtn"><i class="bi bi-database-gear"></i> Alter Tables</button>
     </div>
 
     <!-- TAB 1: ADD TASK -->
-    <div id="addPane" class="tab-pane active-pane">
+    <div id="addPane" class="tab-pane">
         <h5 class="mb-3"><i class="bi bi-plus-circle"></i> Register new to-do</h5>
         <form id="taskForm">
             <div class="row g-4">
@@ -46,7 +46,10 @@
                 </div>
                 <div class="col-md-6">
                     <label class="form-label required">Subject</label>
-                    <input type="text" id="subjectInput" class="form-control" placeholder="Task subject">
+                    <div class="position-relative">
+                        <input type="text" id="subjectInput" class="form-control" placeholder="Task subject" autocomplete="off">
+                        <div id="subjectSuggestions" class="list-group position-absolute w-100 shadow-sm" style="display:none; z-index:1060; max-height:220px; overflow-y:auto;"></div>
+                    </div>
                 </div>
                 <div class="col-md-12">
                     <label class="form-label">Description</label>
@@ -90,7 +93,7 @@
     </div>
 
     <!-- TAB 2: MANAGE TASKS -->
-    <div id="listPane" class="tab-pane">
+    <div id="listPane" class="tab-pane active-pane">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
             <h5><i class="bi bi-list-task"></i> All Tasks</h5>
             <button id="refreshTableBtn" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-repeat"></i> Refresh</button>
@@ -271,6 +274,7 @@
     let followupList = [];
     let statusList = [];
     let categoryList = [];
+    let subjectSuggestions = [];
 
     // ---- cached user ----
     const CACHE_KEY = "taskManagerUser";
@@ -312,8 +316,10 @@
         statusList = status.flat().filter(v => v && v.toString().trim() !== "" && v !== "Work Done Status");
         let cat = await fetchSheetValues(SHEET_CATEGORY, "A:A");
         categoryList = cat.flat().filter(v => v && v.toString().trim() !== "" && v !== "Category");
+        let subjects = await fetchSheetValues(SHEET_TASKS, "C2:C");
+        subjectSuggestions = [...new Set(subjects.flat().map(v => String(v || "").trim()).filter(Boolean))];
         hideLoading();
-        return { usersList, followupList, statusList, categoryList };
+        return { usersList, followupList, statusList, categoryList, subjectSuggestions };
     }
 
     // ---- populate selects with tagging support ----
@@ -580,6 +586,49 @@
         $('#editModal').modal('show');
     }
 
+    // ---- subject suggestions from Data!C2:C ----
+    function renderSubjectSuggestions() {
+        const term = ($('#subjectInput').val() || '').trim().toLowerCase();
+        const $box = $('#subjectSuggestions');
+        if (!term || !subjectSuggestions.length) {
+            $box.hide().empty();
+            return;
+        }
+
+        const matches = subjectSuggestions
+            .filter(value => value.toLowerCase().includes(term))
+            .slice(0, 30);
+
+        if (!matches.length) {
+            $box.hide().empty();
+            return;
+        }
+
+        $box.empty();
+        matches.forEach(value => {
+            const $item = $('<button type="button" class="list-group-item list-group-item-action"></button>');
+            $item.text(value);
+            $item.on('mousedown', function(e) {
+                // Select before the input loses focus.
+                e.preventDefault();
+                $('#subjectInput').val(value);
+                $box.hide().empty();
+            });
+            $box.append($item);
+        });
+        $box.show();
+    }
+
+    $('#subjectInput').on('input focus', renderSubjectSuggestions);
+    $('#subjectInput').on('keydown', function(e) {
+        if (e.key === 'Escape') $('#subjectSuggestions').hide();
+    });
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('#subjectInput, #subjectSuggestions').length) {
+            $('#subjectSuggestions').hide();
+        }
+    });
+
     // ---- form submit ----
     $('#taskForm').on('submit', async function(e) {
         e.preventDefault();
@@ -608,6 +657,7 @@
         let ok = await saveTask(record, false);
         if (ok) {
             $('#taskForm')[0].reset();
+            $('#subjectSuggestions').hide().empty();
             $('#categorySelect').val(null).trigger('change');
             $('#followupMailSelect').val(null).trigger('change');
             $('#assignedUserSelect').val(assignedUser).trigger('change');
@@ -652,6 +702,7 @@
     // ---- clear form ----
     $('#clearFormBtn').on('click', function() {
         $('#taskForm')[0].reset();
+        $('#subjectSuggestions').hide().empty();
         $('#categorySelect').val(null).trigger('change');
         $('#followupMailSelect').val(null).trigger('change');
         $('#assignedUserSelect').val(cachedUser).trigger('change');
@@ -739,6 +790,7 @@
 
     // ---- init ----
     $(async function() {
+        switchTab('list');
         await loadAllMetadata();
         populateSelects();
         renderAlterLists();
