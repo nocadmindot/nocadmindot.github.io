@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Treasury NOC · Compact KPI Dashboard</title>
+    
+    <!-- LOCAL CSS & JS (using ./css and ./js paths with fallbacks) -->
+    <link rel="stylesheet" href="./css/bootstrap.min.css">
+    <link rel="stylesheet" href="./css/bootstrap-icons.min.css">
+             <link rel="stylesheet" href="./css/all-in-one.css">
+    <style>
+
+        .hide-zero-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: white;
+            padding: 8px 16px;
+            border-radius: 40px;
+            border: 1px solid #e9ecef;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .hide-zero-toggle:hover {
+            background: #e8f0fe;
+            border-color: #0f5b9c;
+        }
+
+        .hide-zero-toggle input {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #0f5b9c;
+        }
+
+        .hide-zero-toggle label {
+            margin: 0;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #1e293b;
+        }
+
+        .dashboard-grid {
+            max-width: 100%;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 18px;
+        }
+
+        /* Hidden card class */
+        .stat-card-compact.hidden-card {
+            display: none;
+        }
+
+        .stat-card-compact {
+            border-radius: 22px;
+            padding: 0;
+            transition: all 0.2s ease;
+            box-shadow: 0 8px 20px -6px rgba(0, 0, 0, 0.08);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid rgba(0, 0, 0, 0.04);
+        }
+
+        .stat-card-compact:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 16px 28px -10px rgba(0, 0, 0, 0.12);
+        }
+
+        .card-body-compact {
+            padding: 18px 20px 14px 20px;
+            flex: 1;
+        }
+
+        .count-icon-row {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .count-number {
+            font-size: 2.5rem;
+            font-weight: 400;
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+            font-feature-settings: "tnum";
+            font-variant-numeric: tabular-nums;
+            word-break: break-word;
+        }
+
+        .icon-compact {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .icon-compact i {
+            font-size: 2rem;
+            opacity: 0.7;
+            transition: 0.2s;
+        }
+
+        .stat-card-compact:hover .icon-compact i {
+            opacity: 0.95;
+            transform: scale(1.02);
+        }
+
+        .count-item-label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            opacity: 0.85;
+            line-height: 1.3;
+            margin-top: 4px;
+            word-break: break-word;
+        }
+
+        .card-footer-link {
+            background: rgba(0, 0, 0, 0.02);
+            padding: 10px 18px;
+            border-top: 1px solid rgba(0, 0, 0, 0.06);
+            display: flex;
+            justify-content: flex-end;
+        }
+
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Zero count badge on card */
+        .zero-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #ef4444;
+            color: white;
+            font-size: 0.6rem;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .stat-card-compact {
+            position: relative;
+        }
+
+        @media (max-width: 640px) {
+            body { padding: 16px; }
+            .dashboard-grid { gap: 14px; grid-template-columns: 1fr; }
+            .count-number { font-size: 2rem; }
+            .icon-compact i { font-size: 1.7rem; }
+            .card-body-compact { padding: 14px 16px 10px; }
+            .dashboard-header { flex-direction: column; align-items: flex-start; }
+        }
+
+        /* Pending To-Do section */
+       
+        .todo-header { display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:18px; }
+        .todo-heading { display:flex; align-items:center; gap:12px; }
+        .todo-heading-icon { width:42px; height:42px; display:grid; place-items:center; border-radius:13px; color:#155eef; background:#edf4ff; font-size:20px; }
+        .todo-heading h2 { margin:0; color:var(--primary); font-size:1.18rem; font-weight:700; }
+        .todo-subtitle { margin:4px 0 0; color:#718096; font-size:.82rem; }
+        .todo-count { display:inline-flex; align-items:center; gap:6px; padding:6px 11px; border-radius:30px; background:#fff1f0; color:#c43228; font-size:.78rem; font-weight:700; white-space:nowrap; }
+        .todo-tools { display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
+        .todo-search { width:min(260px,65vw); border:1px solid #6bc9f76b; border-radius:10px; padding:9px 12px; outline:none; font-size:.85rem; background:#fff0;color:var(--text-default) !important; }
+        .todo-search:focus { border-color:#4d8df5; box-shadow:0 0 0 3px rgba(77,141,245,.12); }
+        .todo-refresh { border:0; border-radius:10px; padding:9px 12px; background:#edf4ff; color:#155eef; font-weight:600; font-size:.83rem; cursor:pointer; }
+        .todo-refresh:hover { background:#dceaff; }
+       
+        .todo-category { display:inline-block; padding:4px 8px; border-radius:7px; color:var(--text-default); font-size:.73rem; font-weight:700; white-space:nowrap; }
+        .todo-subject { color:#172b4d; font-weight:700; min-width:170px; }
+        .todo-description { min-width:230px; max-width:360px; white-space:pre-wrap; overflow-wrap:anywhere; }
+        .todo-link { color:#1769d2; text-decoration:none; font-weight:600; }
+        .todo-link:hover { text-decoration:underline; }
+        .todo-date { white-space:nowrap; }
+        .todo-priority { display:inline-block; min-width:62px; text-align:center; padding:4px 9px; border-radius:30px; font-size:.72rem; font-weight:700; }
+        .todo-priority.high { background:#fff0ee; color:#c43b30; }
+        .todo-priority.medium { background:#fff7e6; color:#a66a00; }
+        .todo-priority.low { background:#eaf7ef; color:#23834b; }
+        .todo-empty,.todo-loading,.todo-error { padding:28px 16px; text-align:center; color:#718096; font-size:.88rem; }
+        .todo-empty i { display:block; margin-bottom:8px; font-size:2rem; color:#9aa9bc; }
+        .todo-error { color:#b42318; }
+        @media (max-width:640px) { .todo-section { padding:15px; margin-top:20px; border-radius:15px; } .todo-header { align-items:flex-start; } .todo-tools { width:100%; } .todo-search { flex:1; width:auto; } .todo-heading h2 { font-size:1.05rem; } }
+
+    </style>
+</head>
+<body>
+<div class="page-header">
+                <div class="page-header-left">
+                  <i class="bi bi-speedometer2"></i>
+                    <div>
+                        <h1> NOC Admin Dashboard</h1>
+                        <p>Treasury NOC Admin Dashboard </p>
+                    </div>
+                </div>
+ <div class="hide-zero-toggle" id="hideZeroToggle">
+        <input type="checkbox" id="hideZeroCheckbox" checked>
+        <label for="hideZeroCheckbox"><i class="bi bi-eye-slash"></i> Hide cards with zero </label>
+    </div>
+            </div>
+
+
+<div id="cardsContainer" class="dashboard-grid">
+    <div class="loader-overlay">
+        <div class="spinner-small"></div>
+        <span style="margin-left: 14px; color:#2c3e66;">Loading...</span>
+    </div>
+</div>
+<br>
+<div class="app-card" id="todoSection">
+    <div class="todo-header">
+        <div class="todo-heading">
+            <div class="todo-heading-icon"><i class="bi bi-list-check"></i></div>
+            <div><h2>Pending To-Do List</h2><p class="todo-subtitle">Tasks that are awaiting follow-up or completion</p></div>
+            <span class="todo-count" id="todoCount"><i class="bi bi-hourglass-split"></i> Loading</span>
+        </div>
+        <div class="todo-tools">
+            <input type="search" class="todo-search" id="todoSearch" placeholder="Search pending tasks..." aria-label="Search pending tasks">
+			<a type="button" class="btn btn-success" href="./to-do/index.html"><i class="bi bi-list-check"></i>Manage Task</a>
+            <button type="button" class="todo-refresh" id="todoRefresh"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+        </div>
+    </div>
+    <div class="todo-table-wrap"><div id="todoTableContainer" class="todo-loading"><span class="spinner-small"></span> Loading pending tasks...</div></div>
+</div>
+
+<script src="./js/jquery.min.js"></script>
+<script src="./js/bootstrap.bundle.min.js"></script>
+
+<script>
+    const SPREADSHEET_ID = '1jd1xZe9x2mrZm5KAwGT12vMNYjbrnynsmelNKeK95jc';
+    const SHEET_NAME = 'Dashboard';
+    const API_KEY = 'AIzaSyBB1V3vJpNZ9X1GIF-YOwoa6YSt_iXMLo0';
+
+    // To-Do Google Sheet; first worksheet is Data, matching the attached XLSX.
+    const TODO_SPREADSHEET_ID = '1X68uyowieVR4n3mHIkx2rm_TuHMcyBxejckfDvWMGvY';
+    const TODO_SHEET_NAME = 'Data';
+    let pendingTodoItems = [];
+    let todoIsLoading = false;
+    
+    let dashboardItems = [];
+    let isLoading = false;
+    let activeCounters = [];
+    let hideZeroEnabled = true; // Default: enabled
+    
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+    
+    // Convert icon name to actual HTML element
+    function renderIcon(iconName, textColor) {
+        if (!iconName) return '<i class="bi bi-grid"></i>';
+        
+        let iconClass = iconName.trim();
+        // Ensure it starts with 'bi'
+        if (!iconClass.startsWith('bi ')) {
+            iconClass = 'bi ' + iconClass;
+        }
+        
+        return `<i class="${escapeHtml(iconClass)}" style="color:${textColor};"></i>`;
+    }
+    
+    function isValidBgColor(value) {
+        if (!value) return '#ffffff';
+        const str = value.toString().trim();
+        if (str.match(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/) || 
+            str.match(/^rgba?\(/i) || 
+            str.match(/^hsla?\(/i) ||
+            str === 'transparent') {
+            return str;
+        }
+        return '#ffffff';
+    }
+    
+    function isValidTextColor(value) {
+        if (!value) return '#1e293b';
+        const str = value.toString().trim();
+        if (str.match(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/) || 
+            str.match(/^rgba?\(/i) || 
+            str.match(/^hsla?\(/i)) {
+            return str;
+        }
+        return '#1e293b';
+    }
+    
+    function getNumericCount(value) {
+        if (value === undefined || value === null || value === '') return 0;
+        const str = String(value).trim();
+        const num = parseFloat(str);
+        if (!isNaN(num) && isFinite(num)) return num;
+        return 0;
+    }
+    
+    function formatDisplayValue(originalValue, numericValue) {
+        if (originalValue === undefined || originalValue === null || originalValue === '') return '0';
+        const str = String(originalValue).trim();
+        if (!isNaN(parseFloat(str)) && isFinite(parseFloat(str)) && /^-?\d+(\.\d+)?$/.test(str)) {
+            return numericValue.toLocaleString();
+        }
+        return str;
+    }
+    
+    function animateCounter(element, targetValue, duration = 700) {
+        if (!element) return;
+        if (element._raf) cancelAnimationFrame(element._raf);
+        
+        const startValue = 0;
+        const startTime = performance.now();
+        
+        function updateCounter(currentTime) {
+            const elapsed = currentTime - startTime;
+            let progress = Math.min(1, elapsed / duration);
+            const easeProgress = 1 - Math.pow(1 - progress, 3);
+            let currentValue = startValue + (targetValue - startValue) * easeProgress;
+            if (Number.isInteger(targetValue)) {
+                currentValue = Math.floor(currentValue);
+            } else {
+                currentValue = currentValue.toFixed(1);
+            }
+            element.textContent = currentValue;
+            if (progress < 1) {
+                element._raf = requestAnimationFrame(updateCounter);
+            } else {
+                element.textContent = targetValue.toLocaleString();
+                delete element._raf;
+            }
+        }
+        
+        element._raf = requestAnimationFrame(updateCounter);
+    }
+    
+    function renderCompactCards(items) {
+        const container = document.getElementById('cardsContainer');
+        
+        // Filter items if hide zero is enabled for rendering
+        let itemsToRender = items;
+        if (hideZeroEnabled) {
+            itemsToRender = items.filter(item => {
+                const numValue = getNumericCount(item.rawCount);
+                return numValue !== 0 && !isNaN(numValue);
+            });
+        }
+        
+        if (itemsToRender.length === 0) {
+            if (hideZeroEnabled && items.length > 0) {
+                container.innerHTML = `<div class="empty-state"><i class="bi bi-eye-slash" style="font-size:3rem;"></i><h4 class="mt-3">All cards hidden</h4><p>All dashboard cards have zero value. Uncheck "Hide zero cards" to view them.</p></div>`;
+            } else {
+                container.innerHTML = `<div class="empty-state"><i class="bi bi-inbox" style="font-size:3rem;"></i><h4 class="mt-3">No dashboard cards</h4><p>Add rows to your "Dashboard" sheet to see metrics here.</p></div>`;
+            }
+            return;
+        }
+        
+        if (activeCounters.length) {
+            activeCounters.forEach(ref => {
+                if (ref && ref._raf) cancelAnimationFrame(ref._raf);
+            });
+            activeCounters = [];
+        }
+        
+        let cardsHtml = '';
+        const cardAnimations = [];
+        
+        for (let idx = 0; idx < itemsToRender.length; idx++) {
+            const card = itemsToRender[idx];
+            const bgStyle = `background: ${card.bgColor};`;
+            const textColorStyle = `color: ${card.textColor};`;
+            const iconHtml = renderIcon(card.icon, card.textColor);
+            const hasLink = card.link && card.link.trim() !== '';
+            const linkTarget = hasLink ? `href="${escapeHtml(card.link)}" rel="noopener noreferrer"` : '';
+            
+            const rawCountValue = card.rawCount;
+            const numericTarget = getNumericCount(rawCountValue);
+            const isPureNumber = /^-?\d+(\.\d+)?$/.test(String(rawCountValue).trim());
+            const isZero = numericTarget === 0;
+            
+            cardsHtml += `
+                <div class="stat-card-compact" style="${bgStyle}" data-card-idx="${idx}" data-numeric-value="${numericTarget}" data-is-zero="${isZero}">
+                    ${isZero ? '<span class="zero-badge">ZERO</span>' : ''}
+                    <div class="card-body-compact">
+                        <div class="count-icon-row">
+                            <div class="count-number" style="${textColorStyle} font-weight:400;" data-count-raw="${escapeHtml(rawCountValue)}" data-target="${numericTarget}" data-is-num="${isPureNumber}">0</div>
+                            <div class="icon-compact">
+                                ${iconHtml}
+                            </div>
+                        </div>
+                        <div class="count-item-label" style="${textColorStyle} opacity:0.85;">${escapeHtml(card.countItem)}</div>
+                    </div>
+                    ${hasLink ? `
+                    <div class="card-footer-link">
+                        <a ${linkTarget} class="footer-link-btn" style="color:${card.textColor}; background: rgba(0,0,0,0.05);">
+                            <i class="bi bi-eye"></i> View
+                        </a>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            cardAnimations.push({
+                idx: idx,
+                targetNum: numericTarget,
+                isPureNumber: isPureNumber,
+                rawValue: rawCountValue
+            });
+        }
+        
+        container.innerHTML = cardsHtml;
+        
+        cardAnimations.forEach(anim => {
+            const cardEl = container.querySelector(`.stat-card-compact[data-card-idx="${anim.idx}"]`);
+            if (cardEl) {
+                const countDiv = cardEl.querySelector('.count-number');
+                if (countDiv) {
+                    if (anim.isPureNumber) {
+                        animateCounter(countDiv, anim.targetNum, 650);
+                    } else {
+                        countDiv.textContent = (anim.rawValue !== undefined && anim.rawValue !== '') ? anim.rawValue : '—';
+                    }
+                    if (countDiv._raf) activeCounters.push(countDiv);
+                }
+            }
+        });
+    }
+    
+    async function fetchDashboardData() {
+        if (isLoading) return;
+        isLoading = true;
+        
+        const container = document.getElementById('cardsContainer');
+        container.innerHTML = `<div class="loader-overlay"><div class="spinner-small"></div><span style="margin-left: 14px;">Loading dashboard...</span></div>`;
+        
+        try {
+            const range = encodeURIComponent(`${SHEET_NAME}!A:F`);
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}?key=${API_KEY}`;
+            
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`API responded with ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            if (!data.values || data.values.length < 2) {
+                throw new Error('No data rows found in Dashboard sheet');
+            }
+            
+            const headers = data.values[0];
+            const rows = data.values.slice(1);
+            
+            let colIdx = { bg: 0, text: 1, icon: 2, count: 3, item: 4, link: 5 };
+            if (headers && headers.length) {
+                headers.forEach((h, idx) => {
+                    const colName = h ? h.toString().trim().toLowerCase() : '';
+                    if (colName.includes('bg color') || colName === 'bgcolor') colIdx.bg = idx;
+                    else if (colName.includes('text & icon') || colName === 'textcolor' || colName.includes('text color')) colIdx.text = idx;
+                    else if (colName.includes('bi bi') || colName === 'icon') colIdx.icon = idx;
+                    else if (colName === 'count') colIdx.count = idx;
+                    else if (colName.includes('count item') || colName === 'item') colIdx.item = idx;
+                    else if (colName.includes('link') || colName === 'url') colIdx.link = idx;
+                });
+            }
+            
+            const parsedItems = [];
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const countRaw = row[colIdx.count] ? row[colIdx.count].toString().trim() : '';
+                const itemRaw = row[colIdx.item] ? row[colIdx.item].toString().trim() : '';
+                if (countRaw === '' && itemRaw === '') continue;
+                
+                const bgRaw = row[colIdx.bg] ? row[colIdx.bg].toString().trim() : '#ffffff';
+                const textRaw = row[colIdx.text] ? row[colIdx.text].toString().trim() : '#1e293b';
+                let iconRaw = row[colIdx.icon] ? row[colIdx.icon].toString().trim() : 'bi bi-grid';
+                const linkRaw = row[colIdx.link] ? row[colIdx.link].toString().trim() : '';
+                
+                parsedItems.push({
+                    bgColor: isValidBgColor(bgRaw),
+                    textColor: isValidTextColor(textRaw),
+                    icon: iconRaw,
+                    rawCount: countRaw,
+                    countItem: itemRaw !== '' ? itemRaw : '—',
+                    link: linkRaw
+                });
+            }
+            
+            if (parsedItems.length === 0) {
+                throw new Error('No valid cards found. Ensure "Dashboard" sheet has count or item data.');
+            }
+            
+            dashboardItems = parsedItems;
+            renderCompactCards(dashboardItems);
+            
+        } catch (err) {
+            console.error('Dashboard fetch error:', err);
+            container.innerHTML = `
+                <div class="error-banner">
+                    <i class="bi bi-exclamation-triangle-fill" style="font-size: 2rem; color:#e53e3e;"></i>
+                    <div>
+                        <strong>Unable to load dashboard data</strong><br>
+                        ${escapeHtml(err.message)}<br>
+                        <small>Check Sheet ID, sheet name "Dashboard", API key and public access.</small>
+                        <div class="mt-2">
+                            <button class="footer-link-btn" id="retryBtn" style="background:#eef2ff; border:none;"><i class="bi bi-arrow-repeat"></i> Retry</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            const retryBtn = document.getElementById('retryBtn');
+            if (retryBtn) retryBtn.addEventListener('click', () => fetchDashboardData());
+        } finally {
+            isLoading = false;
+        }
+    }
+    
+
+    function todoEscape(value) {
+        return String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    }
+    function todoColumnIndex(headers, candidates, fallback) {
+        const normalized = headers.map(h => String(h || '').trim().toLowerCase());
+        const index = normalized.findIndex(h => candidates.includes(h));
+        return index >= 0 ? index : fallback;
+    }
+    function todoLinkHtml(value) {
+        const raw = String(value || '').trim();
+        if (!raw || raw === '--NA--' || raw.toLowerCase() === 'n/a') return '<span style="color:#9aa5b5;">—</span>';
+        let href = '';
+        if (/^https?:\/\//i.test(raw)) href = raw;
+        else if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(raw)) href = 'mailto:' + raw;
+        if (!href) return todoEscape(raw);
+        return `<a class="todo-link" href="${todoEscape(href)}" target="_blank" rel="noopener noreferrer">${todoEscape(raw)}</a>`;
+    }
+    function todoPriorityClass(value) {
+        const p = String(value || '').trim().toLowerCase();
+        return p === 'high' ? 'high' : p === 'low' ? 'low' : 'medium';
+    }
+    function renderPendingTodos(items) {
+        const container = document.getElementById('todoTableContainer');
+        const count = document.getElementById('todoCount');
+        if (!container || !count) return;
+        const query = (document.getElementById('todoSearch')?.value || '').trim().toLowerCase();
+        const filtered = items.filter(item => [item.category,item.subject,item.description,item.followup,item.assignedDate,item.cutoffDate,item.priority].join(' ').toLowerCase().includes(query));
+        count.innerHTML = `<i class="bi bi-hourglass-split"></i> ${items.length} Pending`;
+        if (!filtered.length) {
+            container.innerHTML = `<div class="todo-empty"><i class="bi bi-clipboard-check"></i>${items.length ? 'No matching tasks found.' : 'There are no pending tasks right now.'}</div>`;
+            return;
+        }
+        const rows = filtered.map((item,index) => `<tr>
+            <td class="todo-sl">${index+1}</td><td><span class="todo-category">${todoEscape(item.category || '—')}</span></td>
+            <td class="todo-subject">${todoEscape(item.subject || '—')}</td><td><div class="todo-description">${todoEscape(item.description || '—')}</div></td>
+            <td>${todoLinkHtml(item.followup)}</td><td class="todo-date">${todoEscape(item.assignedDate || '—')}</td>
+            <td class="todo-date">${todoEscape(item.cutoffDate || '—')}</td><td><span class="todo-priority ${todoPriorityClass(item.priority)}">${todoEscape(item.priority || 'Normal')}</span></td>
+        </tr>`).join('');
+        container.innerHTML = `<table class="table table-striped table-hover table-bordered dataTable no-footer"><thead><tr><th>SL.No</th><th>Category</th><th>Subject</th><th>Description</th><th>Follow up Email / Url</th><th>Assigned Date</th><th>Cut off date</th><th>Priority</th></tr></thead><tbody>${rows}</tbody></table>`;
+    }
+    async function fetchPendingTodos() {
+        if (todoIsLoading) return;
+        todoIsLoading = true;
+        const container = document.getElementById('todoTableContainer');
+        if (container) container.innerHTML = '<div class="todo-loading"><span class="spinner-small"></span> Loading pending tasks...</div>';
+        try {
+            const range = encodeURIComponent(`${TODO_SHEET_NAME}!A:M`);
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${TODO_SPREADSHEET_ID}/values/${range}?key=${API_KEY}`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`Google Sheets API returned ${response.status}. Check spreadsheet sharing and API key access.`);
+            const data = await response.json();
+            if (!data.values || data.values.length < 2) { pendingTodoItems=[]; renderPendingTodos([]); return; }
+            const headers=data.values[0];
+            const col={
+                category:todoColumnIndex(headers,['category'],1), subject:todoColumnIndex(headers,['subject'],2),
+                description:todoColumnIndex(headers,['description'],3), followup:todoColumnIndex(headers,['follow up email / url','follow-up email / url','follow up email/url'],4),
+                assignedDate:todoColumnIndex(headers,['assigned date'],5), cutoffDate:todoColumnIndex(headers,['cut off date','cutoff date'],6),
+                priority:todoColumnIndex(headers,['priority'],7), status:todoColumnIndex(headers,['work done status','status'],9)
+            };
+            pendingTodoItems=data.values.slice(1).filter(row=>String(row[col.status]||'').trim().toLowerCase()==='pending').map(row=>({
+                category:row[col.category]||'',subject:row[col.subject]||'',description:row[col.description]||'',followup:row[col.followup]||'',
+                assignedDate:row[col.assignedDate]||'',cutoffDate:row[col.cutoffDate]||'',priority:row[col.priority]||''
+            }));
+            renderPendingTodos(pendingTodoItems);
+        } catch(err) {
+            console.error('Pending To-Do fetch error:',err);
+            if(container) container.innerHTML=`<div class="todo-error"><i class="bi bi-exclamation-triangle"></i> Unable to load pending tasks. ${todoEscape(err.message)}<br><small>Ensure the Google Sheet is accessible to this dashboard.</small></div>`;
+            const count=document.getElementById('todoCount'); if(count) count.innerHTML='<i class="bi bi-exclamation-circle"></i> Unavailable';
+        } finally { todoIsLoading=false; }
+    }
+
+    // Toggle hide zero feature
+    function setupHideZeroToggle() {
+        const checkbox = document.getElementById('hideZeroCheckbox');
+        if (checkbox) {
+            // Set initial state to checked (true)
+            checkbox.checked = hideZeroEnabled;
+            
+            checkbox.addEventListener('change', function(e) {
+                hideZeroEnabled = e.target.checked;
+                if (dashboardItems.length > 0) {
+                    renderCompactCards(dashboardItems);
+                }
+            });
+        }
+    }
+    
+    let autoInterval = null;
+    function startAutoRefresh() {
+        if (autoInterval) clearInterval(autoInterval);
+        autoInterval = setInterval(() => {
+            if (!isLoading) fetchDashboardData();
+            if (!todoIsLoading) fetchPendingTodos();
+        }, 90000);
+    }
+    
+    window.addEventListener('DOMContentLoaded', async () => {
+        await Promise.all([fetchDashboardData(), fetchPendingTodos()]);
+        startAutoRefresh();
+        setupHideZeroToggle();
+        document.getElementById('todoSearch')?.addEventListener('input', () => renderPendingTodos(pendingTodoItems));
+        document.getElementById('todoRefresh')?.addEventListener('click', fetchPendingTodos);
+    });
+    
+    window.addEventListener('beforeunload', () => {
+        if (autoInterval) clearInterval(autoInterval);
+        if (activeCounters.length) {
+            activeCounters.forEach(el => {
+                if (el && el._raf) cancelAnimationFrame(el._raf);
+            });
+        }
+    });
+    
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            if (autoInterval) clearInterval(autoInterval);
+        } else {
+            if (autoInterval) clearInterval(autoInterval);
+            startAutoRefresh();
+            if (!isLoading) fetchDashboardData();
+            if (!todoIsLoading) fetchPendingTodos();
+        }
+    });
+</script>
+
+</body>
+</html>

@@ -1934,6 +1934,10 @@ border: 1px solid #e9ecef38;
 /* ============================================================
    ACTION ICONS
    ============================================================ */
+.action-icons {
+    background: transparent;
+}
+
 .action-icons i {
     font-size: 1.2rem;
     margin: 0 5px;

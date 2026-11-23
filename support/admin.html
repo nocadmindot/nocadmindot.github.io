@@ -75,19 +75,19 @@ td strong{display:block;font-size:13px}
 
 <section class="card login" id="loginPanel">
   <h1>Admin sign in</h1>
-  <p>Enter the Help Portal administrator key to manage topics in the Google Sheet.</p>
+  <p>Enter the Help Portal administrator key to manage topics .</p>
   <div class="notice err" id="loginNotice"></div>
   <div class="field">
-    <label for="apiUrlInput">Apps Script Web App URL</label>
-    <input id="apiUrlInput" type="url" placeholder="https://script.google.com/macros/s/.../exec">
-    <div class="hint">Use the same deployed API URL configured in your public index.html.</div>
+    <label for="apiUrlInput">Apps Script URL</label>
+    <input id="apiUrlInput" type="url" value="https://script.google.com/macros/s/AKfycbxduhlcnVmVzLs-ggcIUUjaHGXZlVXI-kxRp5DJr_i7JczNzR2cOfsANehVklTrF5yHRQ/exec">
+    <div class="hint"></div>
   </div>
   <div class="field">
     <label for="adminKeyInput">Admin key</label>
     <input id="adminKeyInput" type="password" autocomplete="current-password" placeholder="Enter administrator key">
   </div>
   <button class="btn primary" id="connectBtn">Connect to Help Database</button>
-  <div class="footer-note">The key is held in this page's memory only and is not saved in local storage.</div>
+  <div class="footer-note">The key is held in this page's memory only and is not saved in local storage. View Help Portal<a href="https://nocadmins.github.io/support/" target="_blank"> here</a></div>
 </section>
 
 <main class="wrap hidden" id="appPanel">
@@ -143,7 +143,7 @@ td strong{display:block;font-size:13px}
             <button class="btn" type="button" id="resetBtn">Clear form</button>
           </div>
         </form>
-        <p class="footer-note">Adding a topic only updates the spreadsheet. Upload the matching HTML/PDF/DOCX file separately into the GitHub help/ directory.</p>
+        <p class="footer-note">Adding a topic only updates the Data sheet. Upload the matching HTML/PDF/DOCX file separately into the GitHub help/ directory.</p>
       </div>
     </section>
 

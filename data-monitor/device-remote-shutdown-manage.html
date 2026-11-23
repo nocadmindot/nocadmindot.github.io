@@ -239,6 +239,78 @@
         .inactivity-warning .bi {
             font-size: 1.2rem;
         }
+
+
+        /* Branch shutdown analytics */
+        .analytics-filter-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; align-items:end; }
+        .analytics-card { background:#fff; border:1px solid #e8edf3; border-radius:16px; padding:18px; box-shadow:0 5px 18px rgba(15,35,60,.045); }
+        .analytics-heading { display:flex; align-items:center; gap:10px; color:#0b2b4a; font-weight:700; margin-bottom:5px; }
+        .analytics-subtitle { color:#64748b; font-size:.88rem; margin-bottom:16px; }
+        .analytics-chart-wrap { position:relative; width:100%; min-height:420px; }
+        .analytics-summary { display:flex; flex-wrap:wrap; gap:10px; margin:14px 0; }
+        .analytics-stat { flex:1 1 140px; padding:12px 15px; border-radius:12px; background:#f8fafc; border:1px solid #e8edf3; }
+        .analytics-stat strong { display:block; font-size:1.35rem; color:#0b2b4a; }
+        .analytics-stat span { color:#64748b; font-size:.78rem; }
+        #analyticsBranches { min-height:42px; }
+        .analytics-empty { text-align:center; padding:45px 15px; color:#64748b; }
+        .analytics-empty i { font-size:2.2rem; display:block; margin-bottom:10px; color:#94a3b8; }
+
+        /* Analytics filters: keep all controls on one row where space permits. */
+        .analytics-filter-single-line {
+            display: grid;
+            grid-template-columns: minmax(145px, .85fr) minmax(145px, .85fr) minmax(260px, 1.7fr) minmax(155px, .8fr);
+            gap: 12px;
+            align-items: end;
+        }
+        .analytics-filter-single-line > div { min-width: 0; }
+        .analytics-branch-picker { position: relative; }
+        .analytics-branch-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% - 2px);
+            left: 0;
+            right: 0;
+            z-index: 1050;
+            background: #fff;
+            border: 1px solid #dbe3ec;
+            border-radius: 10px;
+            box-shadow: 0 12px 28px rgba(15,35,60,.16);
+            overflow: hidden;
+        }
+        .analytics-branch-dropdown.show { display: block; }
+        .analytics-branch-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            border-bottom: 1px solid #edf1f5;
+            background: #f8fafc;
+        }
+        .analytics-branch-actions .btn { padding: 2px 5px; text-decoration: none; }
+        .analytics-branch-actions span { margin-left: auto; font-size: .78rem; }
+        .analytics-branch-options { max-height: 250px; overflow-y: auto; padding: 5px 10px; }
+        .analytics-branch-option {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 7px 4px;
+            border-bottom: 1px solid #f1f4f8;
+            cursor: pointer;
+            font-size: .88rem;
+        }
+        .analytics-branch-option:last-child { border-bottom: 0; }
+        .analytics-branch-option:hover { background: #f5f8fc; }
+        .analytics-branch-option input { margin: 0; flex: 0 0 auto; }
+        @media(max-width: 900px) {
+            .analytics-filter-single-line { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .analytics-branch-picker { grid-column: 1 / -1; }
+        }
+        @media(max-width: 520px) {
+            .analytics-filter-single-line { grid-template-columns: 1fr; }
+            .analytics-branch-picker, .analytics-generate-wrap { grid-column: auto; }
+        }
+\n        @media(max-width:600px){ .analytics-chart-wrap{min-height:340px;} }
+
     </style>
 </head>
 <body>
@@ -296,6 +368,9 @@
         <button class="tab-btn" id="tabPendingBranchesBtn">
             <i class="bi bi-clock-history"></i> Pending Branches
             <span class="badge-notification" id="pendingBranchesBadge">0</span>
+        </button>
+        <button class="tab-btn" id="tabAnalyticsBtn">
+            <i class="bi bi-graph-up-arrow"></i> Branch Shutdown Analytics
         </button>
     </div>
 
@@ -447,6 +522,61 @@
             </div>
         </div>
     </div>
+
+    <!-- ==================== TAB 4: BRANCH SHUTDOWN ANALYTICS ==================== -->
+    <div id="analyticsPane" class="tab-pane">
+        <div class="filter-row">
+            <div class="analytics-heading"><i class="bi bi-graph-up-arrow"></i> Branch-wise shutdown timeline</div>
+            <div class="analytics-subtitle">Compare shutdown/request times across a selected date range. Each selected BR is plotted as a separate coloured line.</div>
+            <div class="analytics-filter-grid analytics-filter-single-line">
+                <div>
+                    <label class="form-label required" for="analyticsFromDate">From date</label>
+                    <input type="text" id="analyticsFromDate" class="form-control flatpickr-date" placeholder="DD/MM/YYYY">
+                </div>
+                <div>
+                    <label class="form-label required" for="analyticsToDate">To date</label>
+                    <input type="text" id="analyticsToDate" class="form-control flatpickr-date" placeholder="DD/MM/YYYY">
+                </div>
+                <div class="analytics-branch-picker">
+                    <label class="form-label required" for="analyticsBranchSearch">Branches (BR)</label>
+                    <input type="text" id="analyticsBranchSearch" class="form-control" autocomplete="off" placeholder="Search and select branches">
+                    <div id="analyticsBranchDropdown" class="analytics-branch-dropdown">
+                        <div class="analytics-branch-actions">
+                            <button type="button" id="analyticsSelectAllBranches" class="btn btn-sm btn-link">Select all</button>
+                            <button type="button" id="analyticsClearBranches" class="btn btn-sm btn-link">Clear</button>
+                            <span id="analyticsBranchCount" class="text-muted">0 selected</span>
+                        </div>
+                        <div id="analyticsBranchOptions" class="analytics-branch-options">
+                            <div class="text-muted small p-2">Loading branch list...</div>
+                        </div>
+                    </div>
+                    <small class="text-muted">Choose one or more branches using the checkboxes.</small>
+                </div>
+                <div class="analytics-generate-wrap">
+                    <label class="form-label d-none d-md-block">&nbsp;</label>
+                    <button id="viewAnalyticsBtn" class="btn btn-primary-custom w-100"><i class="bi bi-bar-chart-line"></i> View</button>
+                </div>
+            </div>
+        </div>
+        <div id="analyticsStatusMsg" class="status-message"></div>
+        <div id="analyticsResults" style="display:none;">
+            <div class="analytics-summary">
+                <div class="analytics-stat"><strong id="analyticsRecordCount">0</strong><span>Shutdown records</span></div>
+                <div class="analytics-stat"><strong id="analyticsBranchCount">0</strong><span>Branches plotted</span></div>
+                <div class="analytics-stat"><strong id="analyticsDateCount">0</strong><span>Dates covered</span></div>
+            </div>
+            <div class="analytics-card">
+                <div class="analytics-heading"><i class="bi bi-activity"></i> Shutdown time by date</div>
+                <div class="analytics-subtitle">Vertical axis: time of day · Horizontal axis: shutdown date</div>
+                <div class="analytics-chart-wrap"><canvas id="branchShutdownChart" aria-label="Branch shutdown times by date"></canvas></div>
+            </div>
+        </div>
+        <div id="analyticsEmpty" class="analytics-card analytics-empty">
+            <i class="bi bi-bar-chart-line"></i>
+            <strong>No graph generated yet</strong>
+            <div>Choose a date range and one or more BR codes, then select Generate Graph.</div>
+        </div>
+    </div>
 </div>
 
 
@@ -456,6 +586,7 @@
 <script src="../js/select2.min.js"></script>
 <script src="../js/flatpickr.min.js"></script>
 <script src="../js/sweetalert2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 
 <script>
 // ============================================================
@@ -612,7 +743,7 @@ $(document).on('mousemove click keydown scroll touchstart', function() {
 });
 
 // Reset inactivity timer on specific button clicks
-$('#viewConfirmBtn, #viewPowerOnBtn, #viewPendingBranchesBtn, #confirmDate, #powerOnDate, #pendingBranchesDate').on('click focus change', function() {
+$('#viewConfirmBtn, #viewPowerOnBtn, #viewPendingBranchesBtn, #confirmDate, #powerOnDate, #pendingBranchesDate, #analyticsFromDate, #analyticsToDate, #analyticsBranches').on('click focus change', function() {
     if (isAutoCheckActive || autoCheckStoppedByInactivity) {
         resetInactivityTimer();
     }
@@ -895,10 +1026,10 @@ function switchTab(tab) {
     if (tab === 'confirm') {
         $('#confirmPane').addClass('active-pane');
         $('#powerOnPane').removeClass('active-pane');
-        $('#pendingBranchesPane').removeClass('active-pane');
+        $('#pendingBranchesPane, #analyticsPane').removeClass('active-pane');
         $('#tabConfirmBtn').addClass('active');
         $('#tabPowerOnBtn').removeClass('active');
-        $('#tabPendingBranchesBtn').removeClass('active');
+        $('#tabPendingBranchesBtn, #tabAnalyticsBtn').removeClass('active');
         
         // If auto-check was stopped by inactivity, restart it
         if (autoCheckStoppedByInactivity) {
@@ -915,10 +1046,10 @@ function switchTab(tab) {
     } else if (tab === 'powerOn') {
         $('#powerOnPane').addClass('active-pane');
         $('#confirmPane').removeClass('active-pane');
-        $('#pendingBranchesPane').removeClass('active-pane');
+        $('#pendingBranchesPane, #analyticsPane').removeClass('active-pane');
         $('#tabPowerOnBtn').addClass('active');
         $('#tabConfirmBtn').removeClass('active');
-        $('#tabPendingBranchesBtn').removeClass('active');
+        $('#tabPendingBranchesBtn, #tabAnalyticsBtn').removeClass('active');
         if (isAutoCheckActive) {
             stopAutoCheck();
         }
@@ -930,8 +1061,9 @@ function switchTab(tab) {
     } else if (tab === 'pendingBranches') {
         $('#pendingBranchesPane').addClass('active-pane');
         $('#confirmPane').removeClass('active-pane');
-        $('#powerOnPane').removeClass('active-pane');
+        $('#powerOnPane, #analyticsPane').removeClass('active-pane');
         $('#tabPendingBranchesBtn').addClass('active');
+        $('#tabAnalyticsBtn').removeClass('active');
         $('#tabConfirmBtn').removeClass('active');
         $('#tabPowerOnBtn').removeClass('active');
         if (isAutoCheckActive) {
@@ -943,12 +1075,20 @@ function switchTab(tab) {
         }
         // Reset inactivity timer when switching to pending branches tab
         resetInactivityTimer();
+    } else if (tab === 'analytics') {
+        $('#analyticsPane').addClass('active-pane');
+        $('#confirmPane, #powerOnPane, #pendingBranchesPane').removeClass('active-pane');
+        $('#tabAnalyticsBtn').addClass('active');
+        $('#tabConfirmBtn, #tabPowerOnBtn, #tabPendingBranchesBtn').removeClass('active');
+        if (isAutoCheckActive) stopAutoCheck();
+        resetInactivityTimer();
     }
 }
 
 $('#tabConfirmBtn').on('click', () => switchTab('confirm'));
 $('#tabPowerOnBtn').on('click', () => switchTab('powerOn'));
 $('#tabPendingBranchesBtn').on('click', () => switchTab('pendingBranches'));
+$('#tabAnalyticsBtn').on('click', () => switchTab('analytics'));
 
 // ============================================================
 //  FLATPICKR DATE PICKER
@@ -984,6 +1124,293 @@ flatpickr("#pendingBranchesDate", {
     placeholder: "DD/MM/YYYY",
     onChange: function() {
         resetInactivityTimer();
+    }
+});
+
+// ============================================================
+//  TAB 4: BRANCH SHUTDOWN ANALYTICS
+//  Backup sheet: A = BR, D = date, E = time
+// ============================================================
+
+let branchShutdownChart = null;
+
+flatpickr("#analyticsFromDate", { dateFormat: "d/m/Y", allowInput: true, defaultDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1) });
+flatpickr("#analyticsToDate", { dateFormat: "d/m/Y", allowInput: true, defaultDate: new Date() });
+
+// Load unique branch codes from Backup!A:A and show them in a sorted checkbox list.
+let analyticsBranchValues = [];
+const analyticsSelectedBranches = new Set();
+
+function updateAnalyticsBranchCount() {
+    $('#analyticsBranchCount').text(`${analyticsSelectedBranches.size} selected`);
+    const names = [...analyticsSelectedBranches].sort((a, b) =>
+        a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+    $('#analyticsBranchSearch').val(names.length ? `${names.length} branch(es) selected` : '');
+}
+
+function renderAnalyticsBranchOptions(filterText = '') {
+    const query = String(filterText || '').trim().toLowerCase();
+    const filtered = analyticsBranchValues.filter(branch => branch.toLowerCase().includes(query));
+    const $list = $('#analyticsBranchOptions');
+    if (!filtered.length) {
+        $list.html('<div class="text-muted small p-2">No matching branches found.</div>');
+        return;
+    }
+    $list.html(filtered.map(branch => {
+        const checked = analyticsSelectedBranches.has(branch) ? 'checked' : '';
+        const safe = analyticsEscapeHtml(branch);
+        return `<label class="analytics-branch-option">
+            <input type="checkbox" class="analytics-branch-checkbox" value="${safe}" ${checked}>
+            <span>${safe}</span>
+        </label>`;
+    }).join(''));
+}
+
+async function loadAnalyticsBranches() {
+    const $list = $('#analyticsBranchOptions');
+    try {
+        const response = await readSheetData(`${BACKUP_SHEET_NAME}!A:A`);
+        const rows = response.values && response.values.length > 1 ? response.values.slice(1) : [];
+        const unique = new Map();
+        rows.forEach(row => {
+            const branch = String(row && row[0] || '').trim();
+            if (branch) unique.set(branch.toUpperCase(), branch);
+        });
+        analyticsBranchValues = [...unique.values()].sort((a, b) =>
+            a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+        renderAnalyticsBranchOptions();
+        if (!analyticsBranchValues.length) {
+            $list.html('<div class="text-muted small p-2">No branch values found in Backup sheet.</div>');
+        }
+    } catch (err) {
+        console.error('Unable to load analytics branches:', err);
+        $list.html('<div class="text-danger small p-2">Unable to load branch list. Please refresh.</div>');
+    }
+}
+
+$('#analyticsBranchSearch').on('focus click', function () {
+    renderAnalyticsBranchOptions('');
+    $('#analyticsBranchDropdown').addClass('show');
+    this.select();
+});
+$('#analyticsBranchSearch').on('input', function () {
+    $('#analyticsBranchDropdown').addClass('show');
+    renderAnalyticsBranchOptions(this.value);
+});
+$('#analyticsBranchOptions').on('change', '.analytics-branch-checkbox', function () {
+    const branch = String(this.value);
+    if (this.checked) analyticsSelectedBranches.add(branch);
+    else analyticsSelectedBranches.delete(branch);
+    updateAnalyticsBranchCount();
+    // Keep the list open to allow multiple checkbox selections.
+});
+$('#analyticsSelectAllBranches').on('click', function () {
+    const query = String($('#analyticsBranchSearch').val() || '').trim().toLowerCase();
+    analyticsBranchValues.filter(branch => branch.toLowerCase().includes(query))
+        .forEach(branch => analyticsSelectedBranches.add(branch));
+    renderAnalyticsBranchOptions(query);
+    updateAnalyticsBranchCount();
+});
+$('#analyticsClearBranches').on('click', function () {
+    analyticsSelectedBranches.clear();
+    renderAnalyticsBranchOptions('');
+    updateAnalyticsBranchCount();
+});
+$(document).on('click', function (event) {
+    if (!$(event.target).closest('.analytics-branch-picker').length) {
+        $('#analyticsBranchDropdown').removeClass('show');
+    }
+});
+loadAnalyticsBranches();
+
+function analyticsDateToUtc(value) {
+    const match = String(value || '').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (!match) return null;
+    return Date.UTC(Number(match[3]), Number(match[2]) - 1, Number(match[1]));
+}
+
+function analyticsTimeToMinutes(value) {
+    if (value === null || value === undefined || value === '') return null;
+    const str = String(value).trim();
+    let m = str.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?$/i);
+    if (m) {
+        let h = Number(m[1]), min = Number(m[2]);
+        const suffix = (m[4] || '').toUpperCase();
+        if (suffix === 'PM' && h < 12) h += 12;
+        if (suffix === 'AM' && h === 12) h = 0;
+        if (h > 23 || min > 59) return null;
+        return h * 60 + min + (Number(m[3] || 0) / 60);
+    }
+    // Also accept spreadsheet serial fractions representing time-of-day.
+    const n = Number(str);
+    if (Number.isFinite(n) && n >= 0 && n < 1) return n * 1440;
+    return null;
+}
+
+function analyticsMinutesLabel(minutes) {
+    const total = Math.round(minutes);
+    const h24 = Math.floor(total / 60) % 24;
+    const mins = total % 60;
+    const suffix = h24 >= 12 ? 'PM' : 'AM';
+    const h12 = h24 % 12 || 12;
+    return `${h12}:${String(mins).padStart(2, '0')} ${suffix}`;
+}
+
+function analyticsRandomColour() {
+    // Random vivid HSL colour, converted to an RGB string for Chart.js.
+    const hue = Math.floor(Math.random() * 360);
+    return `hsl(${hue}, 72%, 46%)`;
+}
+
+function analyticsEscapeHtml(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[ch]));
+}
+
+$('#viewAnalyticsBtn').on('click', async function () {
+    const $btn = $(this);
+    const fromText = $('#analyticsFromDate').val().trim();
+    const toText = $('#analyticsToDate').val().trim();
+    const fromDate = analyticsDateToUtc(fromText);
+    const toDate = analyticsDateToUtc(toText);
+    const selectedBranches = [...analyticsSelectedBranches].map(v => String(v).trim()).filter(Boolean);
+    const uniqueBranches = [...new Map(selectedBranches.map(v => [v.toUpperCase(), v])).values()];
+    const $status = $('#analyticsStatusMsg');
+
+    if (!fromDate || !toDate) {
+        Swal.fire({ icon: 'warning', title: 'Date range required', text: 'Enter valid From and To dates in DD/MM/YYYY format.' });
+        return;
+    }
+    if (fromDate > toDate) {
+        Swal.fire({ icon: 'warning', title: 'Invalid date range', text: 'From date must be earlier than or equal to To date.' });
+        return;
+    }
+    if (!uniqueBranches.length) {
+        Swal.fire({ icon: 'warning', title: 'Branch required', text: 'Select at least one branch using the checkbox list.' });
+        return;
+    }
+    if (typeof Chart === 'undefined') {
+        Swal.fire({ icon: 'error', title: 'Chart library unavailable', text: 'Chart.js could not be loaded. Check your internet connection or local Chart.js path.' });
+        return;
+    }
+
+    $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Loading...');
+    $status.removeClass('error success info').hide();
+    showLoading();
+
+    try {
+        const response = await readSheetData(`${BACKUP_SHEET_NAME}!A:E`);
+        const rows = response.values && response.values.length > 1 ? response.values.slice(1) : [];
+        const branchLookup = new Map(uniqueBranches.map(code => [code.toUpperCase(), code]));
+        const recordsByBranch = new Map(uniqueBranches.map(code => [code, []]));
+
+        rows.forEach(row => {
+            if (!row || !row.length) return;
+            const branchRaw = String(row[0] || '').trim();
+            const branch = branchLookup.get(branchRaw.toUpperCase());
+            if (!branch) return;
+            const dateText = convertToDDMMYYYY(row[3] || '');
+            const dateValue = analyticsDateToUtc(dateText);
+            const timeValue = analyticsTimeToMinutes(row[4]);
+            if (dateValue === null || dateValue < fromDate || dateValue > toDate || timeValue === null) return;
+            recordsByBranch.get(branch).push({ x: dateValue, y: timeValue, date: dateText, time: String(row[4]).trim() });
+        });
+
+        const datasets = [];
+        let totalRecords = 0;
+        const plottedBranches = [];
+        recordsByBranch.forEach((points, branch) => {
+            if (!points.length) return;
+            points.sort((a, b) => a.x - b.x || a.y - b.y);
+            const colour = analyticsRandomColour();
+            datasets.push({
+                label: branch,
+                data: points,
+                borderColor: colour,
+                backgroundColor: colour,
+                pointBackgroundColor: colour,
+                pointBorderColor: '#fff',
+                pointBorderWidth: 1.5,
+                pointRadius: 5,
+                pointHoverRadius: 8,
+                borderWidth: 2.5,
+                tension: 0.22,
+                showLine: true,
+                spanGaps: false
+            });
+            totalRecords += points.length;
+            plottedBranches.push(branch);
+        });
+
+        if (branchShutdownChart) {
+            branchShutdownChart.destroy();
+            branchShutdownChart = null;
+        }
+
+        if (!totalRecords) {
+            $('#analyticsResults').hide();
+            $('#analyticsEmpty').show().html('<i class="bi bi-search"></i><strong>No matching shutdown records</strong><div>No rows for the selected BR codes were found in the chosen date range. Check the branch codes and dates.</div>');
+            $status.addClass('info').html('<i class="bi bi-info-circle"></i> No matching records found in the Backup sheet.').show();
+            return;
+        }
+
+        const allDates = datasets.flatMap(ds => ds.data.map(point => point.x));
+        const minDate = Math.min(...allDates);
+        const maxDate = Math.max(...allDates);
+        const canvas = document.getElementById('branchShutdownChart');
+        branchShutdownChart = new Chart(canvas, {
+            type: 'scatter',
+            data: { datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'nearest', intersect: false },
+                plugins: {
+                    legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle', padding: 18, boxWidth: 8 } },
+                    tooltip: {
+                        callbacks: {
+                            title: items => items.length ? `${items[0].dataset.label} · ${items[0].raw.date}` : '',
+                            label: context => `Shutdown time: ${analyticsMinutesLabel(context.raw.y)}`
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'linear', min: minDate - 43200000, max: maxDate + 43200000,
+                        title: { display: true, text: 'Shutdown date', color: '#334155', font: { weight: '600' } },
+                        ticks: {
+                            color: '#64748b', stepSize: 86400000, autoSkip: true, maxTicksLimit: 20,
+                            callback: value => {
+                                const d = new Date(Number(value));
+                                return `${String(d.getUTCDate()).padStart(2, '0')}/${String(d.getUTCMonth() + 1).padStart(2, '0')}/${d.getUTCFullYear()}`;
+                            }
+                        },
+                        grid: { color: 'rgba(148,163,184,.16)' }
+                    },
+                    y: {
+                        type: 'linear', min: 0, max: 1439,
+                        title: { display: true, text: 'Time of day', color: '#334155', font: { weight: '600' } },
+                        ticks: { stepSize: 120, callback: value => analyticsMinutesLabel(value), color: '#64748b' },
+                        grid: { color: 'rgba(148,163,184,.16)' }
+                    }
+                }
+            }
+        });
+
+        $('#analyticsRecordCount').text(totalRecords);
+        $('#analyticsBranchCount').text(plottedBranches.length);
+        $('#analyticsDateCount').text(new Set(allDates).size);
+        $('#analyticsEmpty').hide();
+        $('#analyticsResults').show();
+        $status.addClass('success').html(`<i class="bi bi-check-circle"></i> Plotted <strong>${totalRecords}</strong> record(s) across <strong>${plottedBranches.length}</strong> branch(es) from ${analyticsEscapeHtml(fromText)} to ${analyticsEscapeHtml(toText)}. ${uniqueBranches.length - plottedBranches.length} selected branch(es) had no matching records.`).show();
+    } catch (err) {
+        console.error('Branch analytics error:', err);
+        $status.addClass('error').html(`<i class="bi bi-exclamation-triangle"></i> Unable to load analytics: ${analyticsEscapeHtml(err.message || err)}`).show();
+        Swal.fire({ icon: 'error', title: 'Unable to generate graph', text: err.message || 'Please try again.' });
+    } finally {
+        $btn.prop('disabled', false).html('<i class="bi bi-bar-chart-line"></i> View');
+        hideLoading();
     }
 });
 
